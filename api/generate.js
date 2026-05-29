@@ -71,12 +71,36 @@ export default async function handler(req, res) {
         const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
         const imageBuffer = Buffer.from(base64Data, 'base64');
 
-        // 3. 上传到 OSS 拿公网 URL (加时间戳防止文件覆盖)
+       // 3. 上传到 OSS 拿公网 URL (加时间戳防止文件覆盖)
         const timestamp = Date.now();
         const audioUrl = await uploadToOSS(audioBuffer, `audio_${timestamp}.mp3`); 
         const imageUrl = await uploadToOSS(imageBuffer, `avatar_${timestamp}.jpg`); 
         
-        // 4. 提交给阿里云 EMO 模型
+        // --- 新增：3.5 步，先调用检测接口获取人脸坐标 ---
+        const detectRes = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/image2video/face-detect', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${ALIYUN_EMO_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: 'emo-detect-v1',
+                input: { image_url: imageUrl },
+                parameters: { ratio: "1:1" } // 1:1 代表生成头像视频
+            })
+        });
+
+        const detectData = await detectRes.json();
+        
+        // 如果图片没过审（比如没找到人脸），直接抛出报错
+        if (!detectData.output || !detectData.output.check_pass) {
+            throw new Error('阿里云未检测到合格人脸，请更换图片: ' + JSON.stringify(detectData));
+        }
+
+        const faceBbox = detectData.output.face_bbox;
+        const extBbox = detectData.output.ext_bbox;
+
+        // --- 第 4 步：带着坐标，正式提交给阿里云 EMO 模型 ---
         const dashscopeRes = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/image2video/video-synthesis/', {
             method: 'POST',
             headers: {
@@ -86,7 +110,12 @@ export default async function handler(req, res) {
             },
             body: JSON.stringify({
                 model: 'emo-v1',
-                input: { image_url: imageUrl, audio_url: audioUrl },
+                input: { 
+                    image_url: imageUrl, 
+                    audio_url: audioUrl,
+                    face_bbox: faceBbox,   // <--- 核心修复：带上人脸核心坐标
+                    ext_bbox: extBbox      // <--- 核心修复：带上人脸扩展坐标
+                }
             })
         });
 
@@ -96,7 +125,7 @@ export default async function handler(req, res) {
         res.status(200).json({ task_id: data.output.task_id });
 
     } catch (error) {
-        console.error(error);
+        console.error("详细报错：", error);
         res.status(500).json({ error: '生成失败', details: error.message });
     }
 }

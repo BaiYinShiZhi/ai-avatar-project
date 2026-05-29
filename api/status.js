@@ -9,7 +9,7 @@ export default async function handler(req, res) {
         });
 
         const data = await dashscopeRes.json();
-        
+        console.log("阿里云详细拒收理由：", JSON.stringify(data));
         res.status(200).json({
             status: data.output.task_status, // 状态: SUCCEEDED, FAILED, PENDING...
             video_url: data.output.video_url || null 
@@ -17,5 +17,6 @@ export default async function handler(req, res) {
 
     } catch (error) {
         res.status(500).json({ error: '状态查询失败' });
+        
     }
 }

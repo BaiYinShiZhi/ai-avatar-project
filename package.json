@@ -1,0 +1,8 @@
+{
+  "name": "ai-avatar-backend",
+  "version": "1.0.0",
+  "dependencies": {
+    "ws": "^8.16.0",
+    "ali-oss": "^6.20.0"
+  }
+}

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 数字人交互桌面</title>
+    <style>
+        body { background-color: #F4EBE2; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; color: #222; }
+        .container { width: 380px; background: #fff; border: 3px solid #111; box-shadow: 6px 6px 0px #FF4800; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
+        .avatar-box { height: 250px; background-color: #0055FF; display: flex; justify-content: center; align-items: center; position: relative; border-bottom: 3px solid #111; }
+        .avatar-image { width: 140px; height: 140px; background: #fff; border-radius: 50%; border: 3px solid #111; object-fit: cover; }
+        #video-container { width: 100%; height: 100%; display: none; object-fit: cover; position: absolute; top: 0; left: 0; }
+        .upload-bar { background: #111; color: #fff; padding: 10px; text-align: center; font-size: 14px; }
+        .upload-bar input[type="file"] { display: none; }
+        .upload-label { color: #FFEC00; cursor: pointer; text-decoration: underline; font-weight: bold; }
+        .chat-box { padding: 20px; height: 130px; overflow-y: auto; background-image: radial-gradient(#ccc 1px, transparent 1px); background-size: 10px 10px; }
+        .status-text { font-size: 14px; font-weight: bold; margin-bottom: 8px; color: #FF4800; }
+        .message { font-size: 16px; line-height: 1.5; }
+        .control-panel { padding: 20px; background: #fff; border-top: 3px solid #111; text-align: center; }
+        button { background-color: #FFEC00; border: 3px solid #111; box-shadow: 3px 3px 0px #111; padding: 12px 24px; font-size: 16px; font-weight: bold; cursor: pointer; border-radius: 8px; transition: all 0.1s; }
+        button:active { box-shadow: 0px 0px 0px #111; transform: translate(3px, 3px); }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="upload-bar">
+        第一步：<label class="upload-label" for="photo-upload">点击上传人物正脸照片</label>
+        <input type="file" id="photo-upload" accept="image/png, image/jpeg">
+    </div>
+
+    <div class="avatar-box">
+        <img class="avatar-image" id="static-avatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ccc' d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E">
+        <video id="video-container" autoplay playsinline></video>
+    </div>
+
+    <div class="chat-box">
+        <div class="status-text" id="status">请先上传照片...</div>
+        <div class="message" id="message"></div>
+    </div>
+
+    <div class="control-panel">
+        <button id="mic-btn" disabled>🎙️ 点击说话</button>
+    </div>
+</div>
+
+<script>
+    // ⚠️ 请填入你的 DeepSeek API Key (前端直接调用大脑)
+    const DEEPSEEK_API_KEY = "sk-xxxxxxxxxxxxxxxxxxxxxxxx"; 
+    
+    const photoUpload = document.getElementById('photo-upload');
+    const staticAvatar = document.getElementById('static-avatar');
+    const videoContainer = document.getElementById('video-container');
+    const micBtn = document.getElementById('mic-btn');
+    const statusEl = document.getElementById('status');
+    const messageEl = document.getElementById('message');
+
+    let userPhotoBase64 = null;
+
+    // 1. 处理照片上传
+    photoUpload.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                userPhotoBase64 = event.target.result;
+                staticAvatar.src = userPhotoBase64;
+                statusEl.innerText = "照片加载成功，系统待机中...";
+                micBtn.disabled = false;
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // 2. 语音识别
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'zh-CN'; 
+    let isRecording = false;
+
+    micBtn.addEventListener('click', () => {
+        if (!isRecording) {
+            recognition.start();
+            statusEl.innerText = "正在聆听...";
+            micBtn.innerText = "🛑 录音中";
+            isRecording = true;
+        }
+    });
+
+    recognition.onresult = (event) => {
+        const userText = event.results[0][0].transcript;
+        messageEl.innerHTML = `<strong>你：</strong>${userText}`;
+        statusEl.innerText = "大脑思考中...";
+        micBtn.innerText = "🎙️ 点击说话";
+        isRecording = false;
+        callDeepSeek(userText);
+    };
+
+    // 3. 调用大模型并触发后端视频生成
+    async function callDeepSeek(text) {
+        try {
+            const dsResponse = await fetch('https://api.deepseek.com/chat/completions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${DEEPSEEK_API_KEY}` },
+                body: JSON.stringify({
+                    model: "deepseek-chat",
+                    messages: [
+                        {"role": "system", "content": "你是一个简短的虚拟助理，回答控制在50字以内。"},
+                        {"role": "user", "content": text}
+                    ]
+                })
+            });
+            const data = await dsResponse.json();
+            const aiReply = data.choices[0].message.content;
+            messageEl.innerHTML = `<strong>AI：</strong>${aiReply}`;
+            
+            generateTalkingHeadVideo(aiReply, userPhotoBase64);
+        } catch (error) {
+            statusEl.innerText = "网络连接出错";
+        }
+    }
+
+    // 4. 调用后端并轮询视频
+    async function generateTalkingHeadVideo(text, imageBase64) {
+        try {
+            statusEl.innerText = "正在请求数字人接口...";
+            
+            const generateRes = await fetch('/api/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: text, imageBase64: imageBase64 })
+            });
+            
+            const generateData = await generateRes.json();
+            const taskId = generateData.task_id;
+            
+            if (!taskId) throw new Error("提交任务失败");
+            statusEl.innerText = "视频生成中 (约需10-30秒)...";
+
+            const pollInterval = setInterval(async () => {
+                const statusRes = await fetch(`/api/status?task_id=${taskId}`);
+                const statusData = await statusRes.json();
+
+                if (statusData.status === 'SUCCEEDED') {
+                    clearInterval(pollInterval);
+                    staticAvatar.style.display = 'none';
+                    videoContainer.style.display = 'block';
+                    videoContainer.src = statusData.video_url;
+                    statusEl.innerText = "播放中...";
+                    
+                    videoContainer.onended = () => {
+                        videoContainer.style.display = 'none';
+                        staticAvatar.style.display = 'block';
+                        statusEl.innerText = "系统待机中...";
+                    };
+                } else if (statusData.status === 'FAILED') {
+                    clearInterval(pollInterval);
+                    statusEl.innerText = "视频生成失败";
+                }
+            }, 3000);
+
+        } catch (error) {
+            statusEl.innerText = "生成视频错误";
+        }
+    }
+</script>
+</body>
+</html>

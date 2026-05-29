@@ -20,11 +20,11 @@
         
         /* 🛠️ 【修改重点】：取消头像框遮罩，让图片全屏铺满 */
         .avatar-image { 
-            width: 100%;    /* 宽度铺满父容器 */
-            height: 100%;   /* 高度铺满父容器 */
-            border-radius: 0; /* 【关键】取消 50% 的圆形弧度 */
-            border: none;     /* 【关键】取消内圈的黑色边框 */
-            object-fit: cover; /* 保持图片比例不拉伸，裁剪适应 */
+            width: 100%;    
+            height: 100%;   
+            border-radius: 0; 
+            border: none;     
+            object-fit: contain; /* 【关键】改成 contain，保证全图显示 */
             position: absolute;
             top: 0;
             left: 0;
@@ -35,10 +35,10 @@
             width: 100%; 
             height: 100%; 
             display: none; 
-            object-fit: cover; 
+            object-fit: contain; /* 【关键】改成 contain，保证视频全图显示 */
             position: absolute; 
             top: 0; 
-            left: 0; 
+            left: 0;
         }
 
         /* 聊天和控制区域 - 保持不变 */
@@ -71,7 +71,7 @@
 
 <script>
     // ⚠️ 记得填入你的 Key
-    const DEEPSEEK_API_KEY = "你的_DEEPSEEK_KEY"; 
+    const DEEPSEEK_API_KEY = "sk-f6a09c05f1bd438895754659e64f33a3"; 
     
     // ⚠️ 这里填入你办好“公网身份证”的固定照片链接（参考你上一个需求）
     const FIXED_IMAGE_HTTPS_URL = "https://ai-avatar-wwl.oss-cn-beijing.aliyuncs.com/ren.jpg";

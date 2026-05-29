@@ -87,7 +87,6 @@ export default async function handler(req, res) {
             body: JSON.stringify({
                 model: 'emo-v1',
                 input: { image_url: imageUrl, audio_url: audioUrl },
-                parameters: { style_level: "normal" }
             })
         });
 

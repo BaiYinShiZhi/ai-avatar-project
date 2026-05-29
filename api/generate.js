@@ -24,7 +24,7 @@ function generateXunfeiTTS(text) {
         ws.on('open', () => {
             ws.send(JSON.stringify({
                 common: { app_id: APPID },
-                business: { aue: "lame", sfl: 1, vcn: "xiaoyan", speed: 50, volume: 50, pitch: 50, tte: "UTF8" },                data: { status: 2, text: Buffer.from(text).toString('base64') }
+                business: { aue: "lame", sfl: 1, vcn: "xiaojing", speed: 50, volume: 50, pitch: 50, tte: "UTF8" },                data: { status: 2, text: Buffer.from(text).toString('base64') }
             }));
         });
 
@@ -55,28 +55,35 @@ async function uploadToOSS(buffer, filename) {
     return result.url;
 }
 
-// --- 模块 3：主控流程 ---
+// ...前面的 crypto, WebSocket, OSS 模块保持不变...
+
+// --- 模块 3：主控流程（洁净版） ---
 export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
 
-    const { text, imageBase64 } = req.body;
+    // 核心改动：不再接收 imageBase64
+    const { text } = req.body;
     const ALIYUN_EMO_KEY = process.env.ALIYUN_EMO_KEY; // 阿里云 DashScope Key
 
+    // ⚠️ 终极必填：把你那个合格大头照的【真实公网HTTP链接】贴到这里！
+    // 注意：阿里云后端检测需要 HTTP 协议，不要加 S
+    const FIXED_IMAGE_HTTP_URL = "https://ai-avatar-wwl.oss-cn-beijing.aliyuncs.com/ren.jpg";
+
     try {
-        // 1. 拿讯飞 MP3 音频 Buffer
-        const cleanText = text.replace(/[*#_`~]/g, ''); // 这一步会删掉所有奇怪的标点符号
+        // 1. 拿讯飞 MP3 音频 Buffer (这里已经集成了 UTF8，不用担心)
+        const cleanText = text.replace(/[*#_`~]/g, ''); // 删掉奇怪的标点符号
         const audioBuffer = await generateXunfeiTTS(cleanText);
 
-        // 2. 将前端的 Base64 格式图片转为纯 Buffer
-        const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
-        const imageBuffer = Buffer.from(base64Data, 'base64');
+        // 核心改动：删掉了“第 2 步图片 Buffer 转换”逻辑
 
-       // 3. 上传到 OSS 拿公网 URL (加时间戳防止文件覆盖)
+        // 3. 上传音频到 OSS 拿公网 URL (这里仍需要上传音频)
         const timestamp = Date.now();
         const audioUrl = await uploadToOSS(audioBuffer, `audio_${timestamp}.mp3`); 
-        const imageUrl = await uploadToOSS(imageBuffer, `avatar_${timestamp}.jpg`); 
         
-        // --- 新增：3.5 步，先调用检测接口获取人脸坐标 ---
+        // 核心改动：这里直接使用我们写死的图片 URL
+        const imageUrl = FIXED_IMAGE_HTTP_URL;
+        
+        // --- 核心修复：3.5 步，带着写死的URL，调用检测接口获取人脸坐标 ---
         const detectRes = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/image2video/face-detect', {
             method: 'POST',
             headers: {
@@ -92,15 +99,15 @@ export default async function handler(req, res) {
 
         const detectData = await detectRes.json();
         
-        // 如果图片没过审（比如没找到人脸），直接抛出报错
-        if (!detectData.output || !detectData.output.check_pass) {
-            throw new Error('阿里云未检测到合格人脸，请更换图片: ' + JSON.stringify(detectData));
+        // 如果图片没过审，直接抛出报错
+        if (!detectData.output || !detectData.output.face_bbox) {
+            throw new Error('阿里云未检测到合格人脸，请确保 FIXED_IMAGE_HTTP_URL 正确: ' + JSON.stringify(detectData));
         }
 
         const faceBbox = detectData.output.face_bbox;
         const extBbox = detectData.output.ext_bbox;
 
-        // --- 第 4 步：带着坐标，正式提交给阿里云 EMO 模型 ---
+        // --- 第 4 步：带着坐标和写死的URL，正式提交给阿里云 EMO 模型 ---
         const dashscopeRes = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/image2video/video-synthesis/', {
             method: 'POST',
             headers: {
@@ -111,10 +118,10 @@ export default async function handler(req, res) {
             body: JSON.stringify({
                 model: 'emo-v1',
                 input: { 
-                    image_url: imageUrl, 
+                    image_url: imageUrl, // 这里是 FIXED_IMAGE_HTTP_URL
                     audio_url: audioUrl,
-                    face_bbox: faceBbox,   // <--- 核心修复：带上人脸核心坐标
-                    ext_bbox: extBbox      // <--- 核心修复：带上人脸扩展坐标
+                    face_bbox: faceBbox,
+                    ext_bbox: extBbox
                 }
             })
         });

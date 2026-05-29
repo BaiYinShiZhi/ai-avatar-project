@@ -3,17 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 数字人交互桌面</title>
+    <title>AI 数字人交互桌面 - 洁净版V2.0</title>
     <style>
+        /* 核心美化和布局 - 保持不变 */
         body { background-color: #F4EBE2; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; color: #222; }
         .container { width: 380px; background: #fff; border: 3px solid #111; box-shadow: 6px 6px 0px #FF4800; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
-        .avatar-box { height: 250px; background-color: #0055FF; display: flex; justify-content: center; align-items: center; position: relative; border-bottom: 3px solid #111; }
-        .avatar-image { width: 140px; height: 140px; background: #fff; border-radius: 50%; border: 3px solid #111; object-fit: cover; }
-        #video-container { width: 100%; height: 100%; display: none; object-fit: cover; position: absolute; top: 0; left: 0; }
-        .upload-bar { background: #111; color: #fff; padding: 10px; text-align: center; font-size: 14px; }
-        .upload-bar input[type="file"] { display: none; }
-        .upload-label { color: #FFEC00; cursor: pointer; text-decoration: underline; font-weight: bold; }
-        .chat-box { padding: 20px; height: 130px; overflow-y: auto; background-image: radial-gradient(#ccc 1px, transparent 1px); background-size: 10px 10px; }
+        
+        /* 头像/视频区域 - 样式重构 */
+        .avatar-box { 
+            height: 380px; /* 改为和宽度一致的正方形，视觉更好 */
+            background-color: #0055FF; /* 备用背景色 */
+            position: relative; 
+            border-bottom: 3px solid #111; 
+            overflow: hidden; /* 确保内容不超过边框 */
+        }
+        
+        /* 🛠️ 【修改重点】：取消头像框遮罩，让图片全屏铺满 */
+        .avatar-image { 
+            width: 100%;    /* 宽度铺满父容器 */
+            height: 100%;   /* 高度铺满父容器 */
+            border-radius: 0; /* 【关键】取消 50% 的圆形弧度 */
+            border: none;     /* 【关键】取消内圈的黑色边框 */
+            object-fit: cover; /* 保持图片比例不拉伸，裁剪适应 */
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        
+        /* 视频容器样式 - 保持铺满 */
+        #video-container { 
+            width: 100%; 
+            height: 100%; 
+            display: none; 
+            object-fit: cover; 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+        }
+
+        /* 聊天和控制区域 - 保持不变 */
+        .chat-box { padding: 20px; height: 130px; overflow-y: auto; background-image: radial-gradient(#ccc 1px, transparent 1px); background-size: 10px 10px; border-top: 3px solid #111; }
         .status-text { font-size: 14px; font-weight: bold; margin-bottom: 8px; color: #FF4800; }
         .message { font-size: 16px; line-height: 1.5; }
         .control-panel { padding: 20px; background: #fff; border-top: 3px solid #111; text-align: center; }
@@ -25,55 +54,40 @@
 <body>
 
 <div class="container">
-    <div class="upload-bar">
-        第一步：<label class="upload-label" for="photo-upload">点击上传人物正脸照片</label>
-        <input type="file" id="photo-upload" accept="image/png, image/jpeg">
-    </div>
-
     <div class="avatar-box">
         <img class="avatar-image" id="static-avatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ccc' d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E">
         <video id="video-container" playsinline></video>
     </div>
 
     <div class="chat-box">
-        <div class="status-text" id="status">请先上传照片...</div>
+        <div class="status-text" id="status">系统待机中...</div>
         <div class="message" id="message"></div>
     </div>
 
     <div class="control-panel">
-        <button id="mic-btn" disabled>🎙️ 点击说话</button>
+        <button id="mic-btn">🎙️ 点击说话</button>
     </div>
 </div>
 
 <script>
-    // ⚠️ 请填入你的 DeepSeek API Key (前端直接调用大脑)
-    const DEEPSEEK_API_KEY = "sk-f6a09c05f1bd438895754659e64f33a3"; 
+    // ⚠️ 记得填入你的 Key
+    const DEEPSEEK_API_KEY = "你的_DEEPSEEK_KEY"; 
     
-    const photoUpload = document.getElementById('photo-upload');
+    // ⚠️ 这里填入你办好“公网身份证”的固定照片链接（参考你上一个需求）
+    const FIXED_IMAGE_HTTPS_URL = "https://ai-avatar-wwl.oss-cn-beijing.aliyuncs.com/ren.jpg";
+
     const staticAvatar = document.getElementById('static-avatar');
     const videoContainer = document.getElementById('video-container');
     const micBtn = document.getElementById('mic-btn');
     const statusEl = document.getElementById('status');
     const messageEl = document.getElementById('message');
 
-    let userPhotoBase64 = null;
+    // 页面加载时应用固定图片
+    if(FIXED_IMAGE_HTTPS_URL && FIXED_IMAGE_HTTPS_URL.startsWith('http')){
+        staticAvatar.src = FIXED_IMAGE_HTTPS_URL;
+    }
 
-    // 1. 处理照片上传
-    photoUpload.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                userPhotoBase64 = event.target.result;
-                staticAvatar.src = userPhotoBase64;
-                statusEl.innerText = "照片加载成功，系统待机中...";
-                micBtn.disabled = false;
-            };
-            reader.readAsDataURL(file);
-        }
-    });
-
-    // 2. 语音识别
+    // 2. 语音识别逻辑 - 保持不变
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
     recognition.lang = 'zh-CN'; 
@@ -97,7 +111,7 @@
         callDeepSeek(userText);
     };
 
-    // 3. 调用大模型并触发后端视频生成
+    // 3. 调用大脑并触发视频生成 - 保持不变
     async function callDeepSeek(text) {
         try {
             const dsResponse = await fetch('https://api.deepseek.com/chat/completions', {
@@ -115,21 +129,22 @@
             const aiReply = data.choices[0].message.content;
             messageEl.innerHTML = `<strong>AI：</strong>${aiReply}`;
             
-            generateTalkingHeadVideo(aiReply, userPhotoBase64);
+            generateTalkingHeadVideo(aiReply);
         } catch (error) {
             statusEl.innerText = "网络连接出错";
         }
     }
 
-    // 4. 调用后端并轮询视频（终极修复版）
-    async function generateTalkingHeadVideo(text, imageBase64) {
+    // 4. 后端请求与轮询播放逻辑 - 保持不变
+    async function generateTalkingHeadVideo(text) {
         try {
             statusEl.innerText = "正在请求数字人接口...";
             
             const generateRes = await fetch('/api/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: text, imageBase64: imageBase64 })
+                // 洁净版后端只接收 text
+                body: JSON.stringify({ text: text })
             });
             
             const generateData = await generateRes.json();
@@ -143,40 +158,37 @@
                     const statusRes = await fetch(`/api/status?task_id=${taskId}`);
                     const statusData = await statusRes.json();
 
-                    // 兼容抓取真实的状态和视频地址
                     const currentStatus = statusData.status || (statusData.output && statusData.output.task_status);
                     const rawUrl = statusData.video_url || (statusData.output && statusData.output.results && statusData.output.results.video_url);
 
                     if (currentStatus === 'SUCCEEDED') {
-                        clearInterval(pollInterval); // 停止轮询
+                        clearInterval(pollInterval);
                         
                         if (rawUrl) {
-                            // 终极修复 1：把 http 强行换成 https，防止浏览器拦截
+                            // 终极修复：把 http 强行换成 https
                             const safeUrl = rawUrl.replace("http://", "https://");
                             
-                            // 终极修复 2：拿到真实链接后，再让头像消失，显示视频
+                            // 💡 无缝切换：让静态图消失，显示全屏视频
                             staticAvatar.style.display = 'none';
                             videoContainer.src = safeUrl;
                             videoContainer.style.display = 'block';
                             statusEl.innerText = "播放中...";
                             
-                            // 确保自动播放生效
                             videoContainer.play();
                             
-                            // 播放完毕后切回静态头像
                             videoContainer.onended = () => {
+                                // 播放完毕切回静态图
                                 videoContainer.style.display = 'none';
                                 staticAvatar.style.display = 'block';
                                 statusEl.innerText = "系统待机中...";
                             };
                         } else {
-                            statusEl.innerText = "虽然成功了，但没拿到视频链接";
+                            statusEl.innerText = "没拿到视频链接";
                         }
                     } else if (currentStatus === 'FAILED') {
                         clearInterval(pollInterval);
-                        statusEl.innerText = "视频生成失败，请看后台日志";
+                        statusEl.innerText = "视频生成失败";
                     }
-                    // 如果是 PENDING 或 PROCESSING，什么都不做，继续等
                 } catch (pollErr) {
                     console.error("轮询出错:", pollErr);
                 }

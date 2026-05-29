@@ -1,5 +1,3 @@
-import fetch from 'node-fetch'; // 如果你的 Node 环境需要的话，不需要也可以不加
-
 export default async function handler(req, res) {
     // 1. 从前端的请求中获取任务 ID
     const { task_id } = req.query;
@@ -19,7 +17,7 @@ export default async function handler(req, res) {
         // 这里的日志会完整打印在 Vercel 监控里
         console.log("阿里云详细返回数据：", JSON.stringify(data));
 
-        // 核心修复：直接把阿里云最完整的原始数据返回给前端，不作任何裁剪！
+        // 核心：直接把阿里云最完整的原始数据返回给前端！
         res.status(200).json(data);
 
     } catch (error) {

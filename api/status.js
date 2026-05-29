@@ -1,22 +1,29 @@
+import fetch from 'node-fetch'; // 如果你的 Node 环境需要的话，不需要也可以不加
+
 export default async function handler(req, res) {
+    // 1. 从前端的请求中获取任务 ID
     const { task_id } = req.query;
     const ALIYUN_EMO_KEY = process.env.ALIYUN_EMO_KEY;
 
     try {
+        // 2. 去阿里云查询该任务的真实进度
         const dashscopeRes = await fetch(`https://dashscope.aliyuncs.com/api/v1/tasks/${task_id}`, {
             method: 'GET',
-            headers: { 'Authorization': `Bearer ${ALIYUN_EMO_KEY}` }
+            headers: {
+                'Authorization': `Bearer ${ALIYUN_EMO_KEY}`
+            }
         });
 
         const data = await dashscopeRes.json();
-        console.log("阿里云详细拒收理由：", JSON.stringify(data));
-        res.status(200).json({
-            status: data.output.task_status, // 状态: SUCCEEDED, FAILED, PENDING...
-            video_url: data.output.video_url || null 
-        });
+        
+        // 这里的日志会完整打印在 Vercel 监控里
+        console.log("阿里云详细返回数据：", JSON.stringify(data));
+
+        // 核心修复：直接把阿里云最完整的原始数据返回给前端，不作任何裁剪！
+        res.status(200).json(data);
 
     } catch (error) {
-        res.status(500).json({ error: '状态查询失败' });
-        
+        console.error("查询状态出错：", error);
+        res.status(500).json({ error: '查询失败', details: error.message });
     }
 }

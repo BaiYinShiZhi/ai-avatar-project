@@ -24,8 +24,7 @@ function generateXunfeiTTS(text) {
         ws.on('open', () => {
             ws.send(JSON.stringify({
                 common: { app_id: APPID },
-                business: { aue: "lame", sfl: 1, vcn: "xiaoyan", speed: 50, volume: 50, pitch: 50 },
-                data: { status: 2, text: Buffer.from(text).toString('base64') }
+                business: { aue: "lame", sfl: 1, vcn: "xiaoyan", speed: 50, volume: 50, pitch: 50, tte: "UTF8" },                data: { status: 2, text: Buffer.from(text).toString('base64') }
             }));
         });
 
@@ -65,7 +64,8 @@ export default async function handler(req, res) {
 
     try {
         // 1. 拿讯飞 MP3 音频 Buffer
-        const audioBuffer = await generateXunfeiTTS(text);
+        const cleanText = text.replace(/[*#_`~]/g, ''); // 这一步会删掉所有奇怪的标点符号
+        const audioBuffer = await generateXunfeiTTS(cleanText);
 
         // 2. 将前端的 Base64 格式图片转为纯 Buffer
         const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");

@@ -32,7 +32,7 @@
 
     <div class="avatar-box">
         <img class="avatar-image" id="static-avatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ccc' d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E">
-        <video id="video-container" autoplay playsinline></video>
+        <video id="video-container" playsinline></video>
     </div>
 
     <div class="chat-box">
@@ -121,7 +121,7 @@
         }
     }
 
-    // 4. 调用后端并轮询视频
+    // 4. 调用后端并轮询视频（终极修复版）
     async function generateTalkingHeadVideo(text, imageBase64) {
         try {
             statusEl.innerText = "正在请求数字人接口...";
@@ -136,27 +136,49 @@
             const taskId = generateData.task_id;
             
             if (!taskId) throw new Error("提交任务失败");
-            statusEl.innerText = "视频生成中 (约需10-30秒)...";
+            statusEl.innerText = "视频生成中 (约需20-40秒)...";
 
             const pollInterval = setInterval(async () => {
-                const statusRes = await fetch(`/api/status?task_id=${taskId}`);
-                const statusData = await statusRes.json();
+                try {
+                    const statusRes = await fetch(`/api/status?task_id=${taskId}`);
+                    const statusData = await statusRes.json();
 
-                if (statusData.status === 'SUCCEEDED') {
-                    clearInterval(pollInterval);
-                    staticAvatar.style.display = 'none';
-                    videoContainer.style.display = 'block';
-                    videoContainer.src = statusData.video_url;
-                    statusEl.innerText = "播放中...";
-                    
-                    videoContainer.onended = () => {
-                        videoContainer.style.display = 'none';
-                        staticAvatar.style.display = 'block';
-                        statusEl.innerText = "系统待机中...";
-                    };
-                } else if (statusData.status === 'FAILED') {
-                    clearInterval(pollInterval);
-                    statusEl.innerText = "视频生成失败";
+                    // 兼容抓取真实的状态和视频地址
+                    const currentStatus = statusData.status || (statusData.output && statusData.output.task_status);
+                    const rawUrl = statusData.video_url || (statusData.output && statusData.output.results && statusData.output.results.video_url);
+
+                    if (currentStatus === 'SUCCEEDED') {
+                        clearInterval(pollInterval); // 停止轮询
+                        
+                        if (rawUrl) {
+                            // 终极修复 1：把 http 强行换成 https，防止浏览器拦截
+                            const safeUrl = rawUrl.replace("http://", "https://");
+                            
+                            // 终极修复 2：拿到真实链接后，再让头像消失，显示视频
+                            staticAvatar.style.display = 'none';
+                            videoContainer.src = safeUrl;
+                            videoContainer.style.display = 'block';
+                            statusEl.innerText = "播放中...";
+                            
+                            // 确保自动播放生效
+                            videoContainer.play();
+                            
+                            // 播放完毕后切回静态头像
+                            videoContainer.onended = () => {
+                                videoContainer.style.display = 'none';
+                                staticAvatar.style.display = 'block';
+                                statusEl.innerText = "系统待机中...";
+                            };
+                        } else {
+                            statusEl.innerText = "虽然成功了，但没拿到视频链接";
+                        }
+                    } else if (currentStatus === 'FAILED') {
+                        clearInterval(pollInterval);
+                        statusEl.innerText = "视频生成失败，请看后台日志";
+                    }
+                    // 如果是 PENDING 或 PROCESSING，什么都不做，继续等
+                } catch (pollErr) {
+                    console.error("轮询出错:", pollErr);
                 }
             }, 3000);
 

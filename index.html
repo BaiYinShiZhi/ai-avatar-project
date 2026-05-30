@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 数字人交互桌面 - 终极极速版</title>
+    <title>AI 数字人交互桌面 - 终极安全版</title>
     <style>
         body { background-color: #F4EBE2; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; color: #222; }
         .container { width: 380px; background: #fff; border: 3px solid #111; box-shadow: 6px 6px 0px #FF4800; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
@@ -65,9 +65,6 @@
 </div>
 
 <script>
-    // ⚠️ 你的 DeepSeek Key
-    const DEEPSEEK_API_KEY = "sk-f6a09c05f1bd438895754659e64f33a3"; 
-    
     // 你的公网固定照片链接
     const FIXED_IMAGE_HTTPS_URL = "https://ai-avatar-wwl.oss-cn-beijing.aliyuncs.com/ren.jpg";
 
@@ -104,29 +101,27 @@
         callDeepSeek(userText);
     };
 
+    // 已经彻底剥离本地密钥，全权交给 Laf 代理请求
     async function callDeepSeek(text) {
         try {
-            const dsResponse = await fetch('https://api.deepseek.com/chat/completions', {
+            const dsResponse = await fetch('https://jdy2zamav3.sealoshzh.site/chat', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${DEEPSEEK_API_KEY}` },
-                body: JSON.stringify({
-                    model: "deepseek-chat",
-                    messages: [
-                        {"role": "system", "content": "你是一个简短的虚拟助理，回答控制在50字以内。"},
-                        {"role": "user", "content": text}
-                    ]
-                })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: text })
             });
+            
             const data = await dsResponse.json();
-            const aiReply = data.choices[0].message.content;
+            const aiReply = data.reply;
             messageEl.innerHTML = `<strong>AI：</strong>${aiReply}`;
             
             generateTalkingHeadVideo(aiReply);
         } catch (error) {
             statusEl.innerText = "网络连接出错";
+            console.error(error);
         }
     }
 
+    // 调用 Laf 的视频生成与轮询接口
     async function generateTalkingHeadVideo(text) {
         try {
             statusEl.innerText = "正在请求数字人接口...";
@@ -182,6 +177,7 @@
 
         } catch (error) {
             statusEl.innerText = "生成视频错误";
+            console.error(error);
         }
     }
 </script>

@@ -3,45 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 数字人交互桌面 - 洁净版V2.0</title>
+    <title>AI 数字人交互桌面 - 终极极速版</title>
     <style>
-        /* 核心美化和布局 - 保持不变 */
         body { background-color: #F4EBE2; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; color: #222; }
         .container { width: 380px; background: #fff; border: 3px solid #111; box-shadow: 6px 6px 0px #FF4800; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
         
-        /* 头像/视频区域 - 样式重构 */
         .avatar-box { 
-            height: 380px; /* 改为和宽度一致的正方形，视觉更好 */
-            background-color: #0055FF; /* 备用背景色 */
+            height: 380px; 
+            background-color: #000; 
             position: relative; 
             border-bottom: 3px solid #111; 
-            overflow: hidden; /* 确保内容不超过边框 */
+            overflow: hidden; 
         }
         
-        /* 🛠️ 【修改重点】：取消头像框遮罩，让图片全屏铺满 */
         .avatar-image { 
             width: 100%;    
             height: 100%;   
             border-radius: 0; 
             border: none;     
-            object-fit: contain; /* 【关键】改成 contain，保证全图显示 */
+            object-fit: contain; 
             position: absolute;
             top: 0;
             left: 0;
         }
         
-        /* 视频容器样式 - 保持铺满 */
         #video-container { 
             width: 100%; 
             height: 100%; 
             display: none; 
-            object-fit: contain; /* 【关键】改成 contain，保证视频全图显示 */
+            object-fit: contain; 
             position: absolute; 
             top: 0; 
             left: 0;
         }
 
-        /* 聊天和控制区域 - 保持不变 */
         .chat-box { padding: 20px; height: 130px; overflow-y: auto; background-image: radial-gradient(#ccc 1px, transparent 1px); background-size: 10px 10px; border-top: 3px solid #111; }
         .status-text { font-size: 14px; font-weight: bold; margin-bottom: 8px; color: #FF4800; }
         .message { font-size: 16px; line-height: 1.5; }
@@ -70,10 +65,10 @@
 </div>
 
 <script>
-    // ⚠️ 记得填入你的 Key
+    // ⚠️ 你的 DeepSeek Key
     const DEEPSEEK_API_KEY = "sk-f6a09c05f1bd438895754659e64f33a3"; 
     
-    // ⚠️ 这里填入你办好“公网身份证”的固定照片链接（参考你上一个需求）
+    // 你的公网固定照片链接
     const FIXED_IMAGE_HTTPS_URL = "https://ai-avatar-wwl.oss-cn-beijing.aliyuncs.com/ren.jpg";
 
     const staticAvatar = document.getElementById('static-avatar');
@@ -82,12 +77,10 @@
     const statusEl = document.getElementById('status');
     const messageEl = document.getElementById('message');
 
-    // 页面加载时应用固定图片
     if(FIXED_IMAGE_HTTPS_URL && FIXED_IMAGE_HTTPS_URL.startsWith('http')){
         staticAvatar.src = FIXED_IMAGE_HTTPS_URL;
     }
 
-    // 2. 语音识别逻辑 - 保持不变
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
     recognition.lang = 'zh-CN'; 
@@ -111,7 +104,6 @@
         callDeepSeek(userText);
     };
 
-    // 3. 调用大脑并触发视频生成 - 保持不变
     async function callDeepSeek(text) {
         try {
             const dsResponse = await fetch('https://api.deepseek.com/chat/completions', {
@@ -135,15 +127,13 @@
         }
     }
 
-    // 4. 后端请求与轮询播放逻辑 - 保持不变
     async function generateTalkingHeadVideo(text) {
         try {
             statusEl.innerText = "正在请求数字人接口...";
             
-            const generateRes = await fetch('/api/generate', {
+            const generateRes = await fetch('https://jdy2zamav3.sealoshzh.site/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                // 洁净版后端只接收 text
                 body: JSON.stringify({ text: text })
             });
             
@@ -155,9 +145,9 @@
 
             const pollInterval = setInterval(async () => {
                 try {
-                    const statusRes = await fetch(`/api/status?task_id=${taskId}`);
+                    const statusRes = await fetch(`https://jdy2zamav3.sealoshzh.site/status?task_id=${taskId}`);       
                     const statusData = await statusRes.json();
-
+                    
                     const currentStatus = statusData.status || (statusData.output && statusData.output.task_status);
                     const rawUrl = statusData.video_url || (statusData.output && statusData.output.results && statusData.output.results.video_url);
 
@@ -165,10 +155,7 @@
                         clearInterval(pollInterval);
                         
                         if (rawUrl) {
-                            // 终极修复：把 http 强行换成 https
                             const safeUrl = rawUrl.replace("http://", "https://");
-                            
-                            // 💡 无缝切换：让静态图消失，显示全屏视频
                             staticAvatar.style.display = 'none';
                             videoContainer.src = safeUrl;
                             videoContainer.style.display = 'block';
@@ -177,7 +164,6 @@
                             videoContainer.play();
                             
                             videoContainer.onended = () => {
-                                // 播放完毕切回静态图
                                 videoContainer.style.display = 'none';
                                 staticAvatar.style.display = 'block';
                                 statusEl.innerText = "系统待机中...";

@@ -70,7 +70,7 @@
     const FIXED_IMAGE_HTTPS_URL = "https://ai-avatar-wwl.oss-cn-beijing.aliyuncs.com/ren.jpg";
     
     // ⚠️ 记得在这里换上你 OSS 里的那个“2秒嘴巴在动”的万能短视频链接！！！
-    const LOOPING_VIDEO_URL = "https://ai-avatar-wwl.oss-cn-beijing.aliyuncs.com/loop-talking.mp4";
+    const LOOPING_VIDEO_URL = "https://ai-avatar-wwl.oss-cn-beijing.aliyuncs.com/video.mp4";
 
     const staticAvatar = document.getElementById('static-avatar');
     const videoContainer = document.getElementById('video-container');
@@ -159,10 +159,15 @@
             videoContainer.src = LOOPING_VIDEO_URL;
             videoContainer.loop = true; 
             videoContainer.style.display = 'block';
-            
-            // 视频必须静音，否则浏览器可能会拦截
+
+            // 👉 关键补丁：强制浏览器加载新的视频源
+            videoContainer.load(); 
+
             videoContainer.muted = true; 
-            videoContainer.play();
+            // 稍微延迟一丢丢再播放，给浏览器一点缓冲时间
+            setTimeout(() => {
+                videoContainer.play();
+            }, 100);
 
             // 播放真实的生成声音
             statusEl.innerText = "播放中...";

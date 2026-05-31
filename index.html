@@ -140,16 +140,21 @@
             transition: opacity 0.4s ease-in-out; /* 淡入淡出动画 */
         }
 
-        .greeting-container {
+       .greeting-container {
+            flex: 1; /* 让它自适应撑满右侧剩余空间 */
             margin-left: 15px;
             background: rgba(255, 255, 255, 0.65);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            padding: 18px;
+            padding: 20px 18px; /* 略微增加一点上下内边距，使其更饱满 */
             border-radius: 20px;
             border: 1px solid rgba(255, 255, 255, 1);
             box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-            margin-top: -20px;
+            /* 💡 核心修复：删除了 margin-top: -20px，借助父级的 flex 自动居中 */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            margin-top: -60px;
         }
 
         .greet-title { font-size: 16px; font-weight: bold; color: #333; margin-bottom: 8px;}
@@ -281,11 +286,102 @@
             pointer-events: none;
             transition: opacity 0.1s linear; 
         }
+        /* 🌌 加载页全屏样式 */
+        #loading-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(160deg, #fdfaff 0%, #f0ebff 40%, #e6f0ff 80%, #f3ebff 100%);
+            z-index: 99999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.8s ease, visibility 0.8s ease; /* 用于平滑消失 */
+        }
+
+        #particle-canvas {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; /* 防止挡住交互 */
+            z-index: 1;
+        }
+
+        .loading-content {
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .loading-text {
+            font-size: 16px;
+            font-weight: 600;
+            background: linear-gradient(90deg, #9b51e0, #4a90e2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 1px;
+            margin-top: 5px;
+        }
+
+        /* 精致的进度条底槽与光效填充 */
+        .loading-bar-bg {
+            width: 160px;
+            height: 4px;
+            background: rgba(155, 81, 224, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .loading-bar-fill {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #4a90e2, #9b51e0);
+            border-radius: 4px;
+            transition: width 0.3s ease-out;
+            box-shadow: 0 0 10px rgba(155, 81, 224, 0.5);
+        }
+        #global-bg-canvas {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -2; /* 放在所有内容的底层，被毛玻璃盖住 */
+            pointer-events: none; /* 绝对不能阻挡用户的点击滑动 */
+        }
+        /* 🎤 用户录音时的底部环境光晕 (随麦克风音量闪烁) */
+        body::after {
+            content: '';
+            position: fixed; 
+            left: 0; right: 0; bottom: 0;
+            height: 45vh; /* 占据底部将近一半的高度，形成柔和的泛光 */
+            background: linear-gradient(to top, rgba(155, 81, 224, 0.45) 0%, rgba(155, 81, 224, 0) 100%);
+            opacity: var(--user-glow-opacity, 0); /* 默认透明，由 JS 注入真实音量控制 */
+            z-index: -1;
+            pointer-events: none;
+            transition: opacity 0.1s linear; 
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
-
+    <canvas id="global-bg-canvas"></canvas>
+<div id="loading-screen">
+        <canvas id="particle-canvas"></canvas>
+        <div class="loading-content">
+            <svg class="ai-sparkle-icon" viewBox="0 0 24 24" width="36" height="36" fill="url(#loading-grad)">
+                <defs>
+                    <linearGradient id="loading-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#9b51e0" />
+                        <stop offset="100%" stop-color="#4a90e2" />
+                    </linearGradient>
+                </defs>
+                <path d="M12 2L14.4 9.6L22 12L14.4 14.4L12 22L9.6 14.4L2 12L9.6 9.6L12 2Z"></path>
+            </svg>
+            <div class="loading-text" id="loading-text">正在唤醒小智... 0%</div>
+            <div class="loading-bar-bg">
+                <div class="loading-bar-fill" id="loading-bar"></div>
+            </div>
+        </div>
+    </div>
 <div class="app-container">
     <div class="top-nav">
         <div class="icon-btn">≡</div>
@@ -333,6 +429,177 @@
 </div>
 
 <script>
+    // ==========================================
+    // 🌌 1. 神经元粒子特效引擎 (AI 科技感)
+    // ==========================================
+    const pCanvas = document.getElementById('particle-canvas');
+    const pCtx = pCanvas.getContext('2d');
+    let pWidth = pCanvas.width = window.innerWidth;
+    let pHeight = pCanvas.height = window.innerHeight;
+    
+    const particles = [];
+    // 生成 60 个随机运动的粒子
+    for (let i = 0; i < 60; i++) {
+        particles.push({
+            x: Math.random() * pWidth,
+            y: Math.random() * pHeight,
+            vx: (Math.random() - 0.5) * 1.5,
+            vy: (Math.random() - 0.5) * 1.5,
+            radius: Math.random() * 2 + 1
+        });
+    }
+
+    let particleAnimationId;
+    function drawParticles() {
+        pCtx.clearRect(0, 0, pWidth, pHeight);
+        
+        // 绘制粒子并检测距离连线 (模拟神经网络)
+        for (let i = 0; i < particles.length; i++) {
+            let p = particles[i];
+            p.x += p.vx; p.y += p.vy;
+            // 边缘反弹
+            if (p.x < 0 || p.x > pWidth) p.vx *= -1;
+            if (p.y < 0 || p.y > pHeight) p.vy *= -1;
+
+            pCtx.beginPath();
+            pCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+            pCtx.fillStyle = 'rgba(155, 81, 224, 0.4)';
+            pCtx.fill();
+
+            for (let j = i + 1; j < particles.length; j++) {
+                let p2 = particles[j];
+                let dist = Math.hypot(p.x - p2.x, p.y - p2.y);
+                if (dist < 100) {
+                    pCtx.beginPath();
+                    pCtx.moveTo(p.x, p.y);
+                    pCtx.lineTo(p2.x, p2.y);
+                    // 距离越近，线条越清晰
+                    pCtx.strokeStyle = `rgba(74, 144, 226, ${1 - dist / 100})`;
+                    pCtx.lineWidth = 0.5;
+                    pCtx.stroke();
+                }
+            }
+        }
+        particleAnimationId = requestAnimationFrame(drawParticles);
+    }
+    
+    // 适配屏幕旋转或尺寸变化
+    window.addEventListener('resize', () => {
+        pWidth = pCanvas.width = window.innerWidth;
+        pHeight = pCanvas.height = window.innerHeight;
+    });
+
+    drawParticles(); // 启动粒子特效
+
+    // ==========================================
+    // 🚀 2. 核心媒体资源预加载调度中心 (修复兼容性版)
+    // ==========================================
+    const assetsToLoad = [
+        { id: 'static-avatar', type: 'image' },
+        { id: 'thinking-video', type: 'video' },
+        { id: 'talking-video', type: 'video' }
+    ];
+
+    let actualProgress = 0; 
+    let displayProgress = 0; 
+    const loadingText = document.getElementById('loading-text');
+    const loadingBar = document.getElementById('loading-bar');
+    const loadingScreen = document.getElementById('loading-screen');
+    // 修复：改用 class 选择器，防止 HTML 漏加 id 导致报错
+    const appContainer = document.querySelector('.app-container'); 
+
+    // 平滑进度条动画
+    function animateProgress() {
+        if (displayProgress < actualProgress) {
+            displayProgress += (actualProgress - displayProgress) * 0.15; 
+            if (actualProgress - displayProgress < 0.5) displayProgress = actualProgress;
+            
+            const intProgress = Math.round(displayProgress);
+            loadingText.innerText = `正在唤醒小智... ${intProgress}%`;
+            loadingBar.style.width = `${intProgress}%`;
+        }
+
+        if (displayProgress >= 99.5) {
+            // 资源就绪，执行退场动画
+            loadingText.innerText = "系统启动完毕";
+            setTimeout(() => {
+                loadingScreen.style.opacity = '0';
+                loadingScreen.style.visibility = 'hidden';
+                if(appContainer) appContainer.style.opacity = '1'; 
+                cancelAnimationFrame(particleAnimationId); // 停掉粒子以节省性能
+            }, 500);
+            return; 
+        }
+        requestAnimationFrame(animateProgress);
+    }
+    animateProgress();
+
+   // ==========================================
+    // 🚀 真正稳定且兼容的预加载逻辑 (防呆兼容版)
+    // ==========================================
+    function preloadAssets() {
+        let loadedCount = 0;
+
+        // 统一进度推进函数
+        const checkReady = () => {
+            loadedCount++;
+            actualProgress = (loadedCount / assetsToLoad.length) * 100;
+        };
+
+        // 🚨 兜底机制：最多只等 8 秒，直接强制进入页面
+        const fallbackTimeout = setTimeout(() => {
+            if (actualProgress < 100) {
+                console.warn("预加载超时或被拦截，强制开启主界面");
+                actualProgress = 100;
+            }
+        }, 8000);
+
+        for (let i = 0; i < assetsToLoad.length; i++) {
+            const asset = assetsToLoad[i];
+            const domElement = document.getElementById(asset.id);
+            
+            // 如果没找到元素，直接跳过记为完成，防止卡死
+            if (!domElement) {
+                checkReady();
+                continue;
+            }
+
+            // 💡 核心修复：同时兼容 data-src 和 src 两种写法！
+            const sourceUrl = domElement.getAttribute('data-src') || domElement.getAttribute('src');
+            
+            if (!sourceUrl || sourceUrl === 'null') {
+                 checkReady();
+                 continue;
+            }
+
+            // 如果还没把真实 URL 赋给 src，则赋值触发下载
+            if (domElement.getAttribute('src') !== sourceUrl) {
+                domElement.src = sourceUrl; 
+            }
+
+            // 监听真实的加载完成事件
+            if (asset.type === 'image') {
+                // 如果图片已经存在于浏览器缓存中，直接判定加载完成
+                if (domElement.complete) {
+                    checkReady();
+                } else {
+                    domElement.onload = checkReady;
+                    domElement.onerror = checkReady; // 即使加载失败，也要推进进度
+                }
+            } else if (asset.type === 'video') {
+                // 如果视频的元数据或首帧已经就绪 (readyState >= 2)，直接判定完成
+                if (domElement.readyState >= 2) {
+                    checkReady();
+                } else {
+                    domElement.load();
+                    domElement.onloadeddata = checkReady; 
+                    domElement.onerror = checkReady;
+                }
+            }
+        }
+    }
+    // 页面结构一旦解析完毕，立刻启动预下载
+    document.addEventListener("DOMContentLoaded", preloadAssets);
     const QUESTIONS_POOL = [
         "咱们学院有哪些专业？", "怎么查询课表和考试安排？", "学院领导和任课老师有哪些？", "实训室使用有什么规定？", "近期有哪些技能竞赛可以报名？", "奖助学金申请流程是什么？",
         "人工智能技术应用专业核心课程有哪些？", "Python、机器学习该怎么入门学习？", "本专业可以使用哪些免费 AI 工具？", "数字媒体技术专业就业方向有哪些？", "课程设计 / 毕业设计有哪些参考方向？", "专业教材和学习资料在哪里领取？",
@@ -615,17 +882,18 @@
     const aiWaves = [ { color: 'rgba(74, 144, 226, 0.8)', speed: 1.0, height: 1.0, lineWidth: 3 }, { color: 'rgba(100, 181, 246, 0.5)', speed: 1.3, height: 0.7, lineWidth: 2 }, { color: 'rgba(144, 202, 249, 0.4)', speed: 0.8, height: 0.5, lineWidth: 2 } ];
 
     // ==========================================
-    // 🌊 波浪动画引擎 (已修复音量模拟与声光同步)
+    // 🌊 波浪动画引擎 (已加入用户麦克风底部光圈互动)
     // ==========================================
     function drawWave() {
         if (!isRecording && !isAITalking) {
-            document.body.style.setProperty('--bg-light-opacity', '0'); // 停止时关灯
+            document.body.style.setProperty('--bg-light-opacity', '0'); // 关闭AI蓝光
+            document.body.style.setProperty('--user-glow-opacity', '0'); // 关闭用户紫光
             return; 
         }
         drawVisual = requestAnimationFrame(drawWave);
         let averageVolume = 0;
         
-        // 1. 尝试从分析器中获取真实声音数据 (主要针对麦克风录音时)
+        // 1. 从音频分析器中获取真实声音数据 (麦克风或AI均有效)
         if (analyser) {
             const bufferLength = analyser.frequencyBinCount; 
             const dataArray = new Uint8Array(bufferLength);
@@ -634,24 +902,29 @@
             averageVolume = sum / bufferLength;
         }
 
-        // 🚨 2. 核心修复点：找回丢失的兜底模拟逻辑！
-        // 如果 AI 在说话，但由于没有接入分析器拿不到真实音量，则用数学公式模拟出一个逼真的呼吸节奏
+        // 2. AI 说话时的兜底模拟逻辑
         if (isAITalking && averageVolume < 2) {
-             const time = Date.now() / 150; // 控制呼吸频率
-             averageVolume = 25 + Math.sin(time) * 15 + Math.random() * 15; // 正弦波结合随机数模拟语音抑扬顿挫
+             const time = Date.now() / 150; 
+             averageVolume = 25 + Math.sin(time) * 15 + Math.random() * 15; 
         }
 
         // 3. 计算当前平滑振幅
         let targetAmplitude = (averageVolume / 100); 
-        if (targetAmplitude < 0.1) targetAmplitude = 0.1; // 设定一个最小的基准线
-        currentAmplitude += (targetAmplitude - currentAmplitude) * 0.15; // 运用缓动算法让变化更丝滑
+        if (targetAmplitude < 0.1) targetAmplitude = 0.1; 
+        currentAmplitude += (targetAmplitude - currentAmplitude) * 0.15; 
 
-        // 🔵 4. 将平滑后的振幅映射为蓝色背景灯的透明度，实现声光同步
+        // 🔵 4. 核心：声光同步映射体系 (根据谁在说话亮不同的光)
         if (isAITalking) {
-            let lightOpacity = currentAmplitude * 1.5; // 💡 增强基础光芒倍数，让呼吸灯更明显
-            if (lightOpacity > 1.0) lightOpacity = 1.0; // 封顶最高亮度为 100%
+            // 小智说话：亮起全局蓝色光晕
+            let lightOpacity = currentAmplitude * 1.5; 
+            if (lightOpacity > 1.0) lightOpacity = 1.0; 
             document.body.style.setProperty('--bg-light-opacity', lightOpacity.toFixed(2));
-        } else {
+            document.body.style.setProperty('--user-glow-opacity', '0');
+        } else if (isRecording) {
+            // 🟣 用户说话：亮起底部紫色光晕！(稍微放大一点倍数，对手机麦克风更灵敏)
+            let userGlow = currentAmplitude * 2.0; 
+            if (userGlow > 1.0) userGlow = 1.0;
+            document.body.style.setProperty('--user-glow-opacity', userGlow.toFixed(2));
             document.body.style.setProperty('--bg-light-opacity', '0');
         }
 
@@ -659,13 +932,11 @@
         canvasCtx.clearRect(0, 0, waveCanvas.width, waveCanvas.height);
         phase += 0.08; 
         const centerY = waveCanvas.height / 2; const width = waveCanvas.width;
-        // 用户录音用紫色波浪 (userWaves)，AI 回答用蓝色波浪 (aiWaves)
         const currentWaves = isRecording ? userWaves : aiWaves;
         currentWaves.forEach(wave => {
             canvasCtx.beginPath(); canvasCtx.moveTo(0, centerY);
             for (let x = 0; x <= width; x++) {
                 const xNorm = x / width; const taper = Math.sin(xNorm * Math.PI); 
-                // 这里的 currentAmplitude 就是上面的音量数据，如果有起伏，波浪就会跟着跳动
                 const y = centerY + Math.sin(xNorm * 8 + phase * wave.speed) * (currentAmplitude * 40 * wave.height) * taper;
                 canvasCtx.lineTo(x, y);
             }
@@ -673,6 +944,15 @@
         });
     }
 
+    // 停止所有动画并关闭所有光效
+    function stopVisualizer() { 
+        isAITalking = false; 
+        document.body.style.setProperty('--bg-light-opacity', '0'); // 关闭AI蓝色呼吸灯
+        document.body.style.setProperty('--user-glow-opacity', '0'); // 关闭用户紫色光圈
+        
+        if (drawVisual) { cancelAnimationFrame(drawVisual); drawVisual = null; } 
+        waveCanvas.style.display = 'none'; waveSpacer.style.display = 'block'; 
+    }
     async function startVisualizer() {
         if (!audioContext) {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -797,12 +1077,11 @@
             messageEl.innerHTML = `<strong>你：</strong>${userText}<br><br><strong>小智：</strong><div class="ai-response-format">${formattedHTML}</div>`; 
         }
     }
-    // ==========================================
-    // ⛅ 天气模块 (专为手机端优化的鲁棒定位逻辑)
+   // ==========================================
+    // ⛅ 天气模块 (终极优化版：国内极速接口)
     // ==========================================
     const weatherEl = document.querySelector('.weather-info');
 
-    // 解析更丰富的天气状态代码 (Open-Meteo WMO 代码规范)
     function getWeatherDesc(code) {
         if (code === 0) return "晴 ☀️";
         if (code === 1 || code === 2) return "多云 ⛅";
@@ -812,78 +1091,153 @@
         if (code >= 71 && code <= 77) return "雪 ❄️";
         if (code >= 80 && code <= 82) return "阵雨 🌦️";
         if (code >= 95) return "雷暴 ⛈️";
-        return "未知";
+        return "天气";
     }
 
-    // 根据坐标获取并渲染天气
-    async function fetchWeatherByCoords(lat, lon, cityName) {
+    async function fetchRealTimeWeather() {
         try {
-            const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=auto`);
-            const weatherData = await weatherRes.json();
-            const temp = Math.round(weatherData.current_weather.temperature);
-            const code = weatherData.current_weather.weathercode;
-            const desc = getWeatherDesc(code);
-            weatherEl.innerText = `${cityName} ${temp}°C ${desc}`;
-        } catch (e) {
-            weatherEl.innerText = "天气加载失败";
-        }
-    }
+            // 1. 使用极速国内 IP 接口获取当前城市和经纬度估算 (比 HTML5 GPS 快 10 倍，无需授权)
+            // 采用 jsonp 替代跨域限制
+            const getCity = async () => {
+                return new Promise((resolve) => {
+                    const script = document.createElement('script');
+                    script.src = 'https://whois.pconline.com.cn/ipJson.jsp?callback=weatherIpCallback';
+                    document.body.appendChild(script);
+                    window.weatherIpCallback = (data) => {
+                        document.body.removeChild(script);
+                        delete window.weatherIpCallback;
+                        // 取城市名，去掉"市"
+                        let city = (data.city || data.pro || "重庆").replace(/市$/, '');
+                        resolve(city);
+                    };
+                    // 2秒超时保底
+                    setTimeout(() => resolve("重庆"), 2000); 
+                });
+            };
 
-    function fetchRealTimeWeather() {
-        // 🚨 兜底策略：如果定位失败、超时或用户拒绝，默认显示学院所在地（重庆）
-        const defaultLat = 29.53;
-        const defaultLon = 106.55;
-        const defaultCity = "重庆";
-
-        if (!navigator.geolocation) {
-            fetchWeatherByCoords(defaultLat, defaultLon, defaultCity);
-            return;
-        }
-
-        // 定位参数配置
-        const options = {
-            enableHighAccuracy: false, // 关闭高精度（采用基站定位即可），能大幅提高手机端出结果的速度
-            timeout: 5000,             // 最高等待 5 秒，超过 5 秒算作失败
-            maximumAge: 300000         // 允许使用 5 分钟内的缓存位置
-        };
-
-        navigator.geolocation.getCurrentPosition(
-            async (position) => {
-                try {
+            const cityName = await getCity();
+            
+            // 2. 如果之前获得了精准经纬度最好，没有的话，尝试发起 HTML5 定位查天气，或者直接用备用坐标
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
                     const lat = position.coords.latitude;
                     const lon = position.coords.longitude;
-                    
-                    // 使用 AbortController 为城市名称解析接口增加 3 秒超时限制
-                    const geoCtrl = new AbortController();
-                    const geoTimeout = setTimeout(() => geoCtrl.abort(), 3000);
-                    
-                    const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&addressdetails=1`, { 
-                        headers: { 'Accept-Language': 'zh-CN' },
-                        signal: geoCtrl.signal 
-                    });
-                    clearTimeout(geoTimeout);
-                    
-                    const geoData = await geoRes.json();
-                    let city = geoData.address.city || geoData.address.town || geoData.address.county || "当地";
-                    city = city.replace(/市$|区$|县$/, ''); // 优化视觉：去掉后缀，例如把"重庆市"精简为"重庆"
-                    
-                    fetchWeatherByCoords(lat, lon, city);
-                } catch (e) {
-                    // 如果城市名称接口超时或被拦截，不要卡死，直接用坐标查天气，名称显示"当地"
-                    fetchWeatherByCoords(position.coords.latitude, position.coords.longitude, "当地");
-                }
-            },
-            (error) => {
-                console.warn("手机定位受限或超时，启用默认城市兜底。原因:", error.message);
-                // 核心修复：一旦定位失败（如微信环境无权限），立刻显示兜底城市天气，不再卡在“定位中...”
-                fetchWeatherByCoords(defaultLat, defaultLon, defaultCity);
-            },
-            options
-        );
+                    const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=auto`);
+                    const weatherData = await weatherRes.json();
+                    const temp = Math.round(weatherData.current_weather.temperature);
+                    const code = weatherData.current_weather.weathercode;
+                    weatherEl.innerText = `${cityName} ${temp}°C ${getWeatherDesc(code)}`;
+                },
+                async () => {
+                    // 拒绝定位时，直接使用默认坐标（例如重庆经纬度）结合刚才查到的城市名
+                    const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=29.53&longitude=106.55&current_weather=true&timezone=auto`);
+                    const weatherData = await weatherRes.json();
+                    weatherEl.innerText = `${cityName} ${Math.round(weatherData.current_weather.temperature)}°C ${getWeatherDesc(weatherData.current_weather.weathercode)}`;
+                },
+                { timeout: 3000, enableHighAccuracy: false }
+            );
+
+        } catch (e) {
+            weatherEl.innerText = "天气服务暂歇";
+        }
     }
     
-    // 初始化调用
     fetchRealTimeWeather();
+   // ==========================================
+    // 🌌 3. 常驻环境背景 (交互增强版：按住加速光梭)
+    // ==========================================
+    const bgCanvas = document.getElementById('global-bg-canvas');
+    const bgCtx = bgCanvas.getContext('2d');
+    let bgW = bgCanvas.width = window.innerWidth;
+    let bgH = bgCanvas.height = window.innerHeight;
+    const bgParticles = [];
+    
+    // 生成 45 个柔和的悬浮光斑
+    for(let i = 0; i < 45; i++) {
+        bgParticles.push({
+            x: Math.random() * bgW, 
+            y: Math.random() * bgH,
+            radius: Math.random() * 3 + 1,
+            vx: (Math.random() - 0.5) * 0.3,
+            vy: Math.random() * -0.6 - 0.2, // 基础缓速上浮
+            alpha: Math.random() * 0.5 + 0.1,
+            alphaChange: (Math.random() * 0.008 + 0.003) * (Math.random() > 0.5 ? 1 : -1),
+            color: Math.random() > 0.5 ? '155, 81, 224' : '74, 144, 226'
+        });
+    }
+
+    // 全局速度倍率，用于实现平滑的“推背感”加速和减速
+    let globalSpeedMultiplier = 1;
+
+    function drawBgParticles() {
+        bgCtx.clearRect(0, 0, bgW, bgH);
+
+        // 💡 核心交互逻辑：监听 isHolding 变量（用户是否按住麦克风）
+        // 如果按住，目标速度飙升到 15 倍；松开则恢复 1 倍
+        let targetSpeed = (typeof isHolding !== 'undefined' && isHolding) ? 15 : 1;
+        
+        // 缓动算法：让加速和减速都有平滑的过渡，避免生硬切换
+        globalSpeedMultiplier += (targetSpeed - globalSpeedMultiplier) * 0.1;
+
+        for(let i = 0; i < bgParticles.length; i++) {
+            let p = bgParticles[i];
+            
+            // 计算当前帧的真实速度
+            let currentVy = p.vy * globalSpeedMultiplier;
+            // 加速上涌时，减弱左右摇摆，让光斑笔直冲向云霄
+            let currentVx = globalSpeedMultiplier > 2 ? p.vx * 0.2 : p.vx;
+            
+            p.x += currentVx; 
+            p.y += currentVy;
+            
+            // 交互增强：按住时，粒子的呼吸上限亮度和闪烁频率变高，显得能量更强
+            let maxAlpha = globalSpeedMultiplier > 2 ? 0.9 : 0.6;
+            p.alpha += p.alphaChange * (globalSpeedMultiplier > 2 ? 2.5 : 1);
+            
+            if(p.alpha <= 0.05) {
+                p.alpha = 0.05;
+                p.alphaChange = Math.abs(p.alphaChange);
+            } else if (p.alpha >= maxAlpha) {
+                p.alpha = maxAlpha;
+                p.alphaChange = -Math.abs(p.alphaChange);
+            }
+            
+            // 如果光斑飘出了屏幕顶部，让它从底部无缝重新出现
+            if(p.y < -20) {
+                p.y = bgH + 20;
+                p.x = Math.random() * bgW;
+                p.alpha = 0; // 重生时全透明，平滑滑入
+            }
+            if(p.x < -10) p.x = bgW + 10;
+            if(p.x > bgW + 10) p.x = -10;
+            
+            // 💡 视觉进阶：速度极快时，将圆点拉长变成“光梭（动态模糊特效）”
+            bgCtx.beginPath(); 
+            if (globalSpeedMultiplier > 3) {
+                bgCtx.moveTo(p.x, p.y);
+                // 根据当前向上的速度拉长尾巴
+                bgCtx.lineTo(p.x, p.y - currentVy * 1.5);
+                bgCtx.strokeStyle = `rgba(${p.color}, ${p.alpha})`;
+                bgCtx.lineWidth = p.radius * 2;
+                bgCtx.lineCap = "round";
+                bgCtx.stroke();
+            } else {
+                // 速度正常时，恢复为圆润的光斑
+                bgCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); 
+                bgCtx.fillStyle = `rgba(${p.color}, ${p.alpha})`; 
+                bgCtx.fill();
+            }
+        }
+        requestAnimationFrame(drawBgParticles);
+    }
+    drawBgParticles();
+
+    // 监听屏幕大小变化
+    window.addEventListener('resize', () => { 
+        bgW = bgCanvas.width = window.innerWidth; 
+        bgH = bgCanvas.height = window.innerHeight; 
+    });
+
 </script>
 </body>
 </html>

@@ -2,120 +2,594 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 数字人交互桌面 - 极速循环版</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>AI 智能助手 - 小智</title>
     <style>
-        body { background-color: #F4EBE2; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; color: #222; }
-        .container { width: 380px; background: #fff; border: 3px solid #111; box-shadow: 6px 6px 0px #FF4800; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
-        
-        .avatar-box { 
-            height: 380px; 
-            background-color: #000; 
-            position: relative; 
-            border-bottom: 3px solid #111; 
-            overflow: hidden; 
-        }
-        
-        .avatar-image { 
-            width: 100%;    
-            height: 100%;   
-            border-radius: 0; 
-            border: none;     
-            object-fit: contain; 
-            position: absolute;
-            top: 0;
-            left: 0;
-        }
-        
-        #video-container { 
-            width: 100%; 
-            height: 100%; 
-            display: none; 
-            object-fit: contain; 
-            position: absolute; 
-            top: 0; 
-            left: 0;
+        /* --- 核心亮色拟态背景 --- */
+        body { 
+            margin: 0; 
+            padding: 0; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(160deg, #fdfaff 0%, #f0ebff 40%, #e6f0ff 80%, #f3ebff 100%);
+            color: #333333;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
         }
 
-        .chat-box { padding: 20px; height: 130px; overflow-y: auto; background-image: radial-gradient(#ccc 1px, transparent 1px); background-size: 10px 10px; border-top: 3px solid #111; }
-        .status-text { font-size: 14px; font-weight: bold; margin-bottom: 8px; color: #FF4800; }
-        .message { font-size: 16px; line-height: 1.5; }
-        .control-panel { padding: 20px; background: #fff; border-top: 3px solid #111; text-align: center; }
-        button { background-color: #FFEC00; border: 3px solid #111; box-shadow: 3px 3px 0px #111; padding: 12px 24px; font-size: 16px; font-weight: bold; cursor: pointer; border-radius: 8px; transition: all 0.1s; }
-        button:active { box-shadow: 0px 0px 0px #111; transform: translate(3px, 3px); }
-        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        .app-container { 
+            width: 100%; 
+            max-width: 400px; 
+            height: 100%; 
+            max-height: 850px;
+            position: relative; 
+            display: flex; 
+            flex-direction: column; 
+        }
+
+        /* --- 1. 顶部导航 --- */
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 20px 10px 20px;
+            z-index: 10;
+        }
+        .icon-btn { 
+            font-size: 22px; 
+            cursor: pointer; 
+            color: #333; 
+            font-weight: bold; 
+            transition: transform 0.2s;
+        }
+        .icon-btn:active { transform: scale(0.8); }
+        .nav-title { font-size: 15px; font-weight: 600; color: #1a1a1a; }
+        
+        .weather-info {
+            text-align: right;
+            font-size: 12px;
+            color: #888888;
+            padding-right: 20px;
+            margin-bottom: 10px;
+        }
+
+        /* --- 2. 头部数字人与欢迎区 --- */
+        .header-section {
+            display: flex;
+            padding: 0 20px;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .avatar-container {
+            width: 130px; 
+            height: 190px; 
+            border-radius: 16px;
+            background: #ffffff; 
+            position: relative;
+            overflow: hidden;
+            flex-shrink: 0;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+        }
+
+        .avatar-container img, .avatar-container video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; 
+            object-position: center top; 
+            position: absolute;
+            left: 0; top: 0;
+            background: #ffffff;
+        }
+
+        #video-container { display: none; }
+
+        .greeting-container {
+            margin-left: 15px;
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 18px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 1);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            margin-top: -20px;
+        }
+
+        .greet-title { font-size: 16px; font-weight: bold; color: #333; margin-bottom: 8px;}
+        .highlight-name {
+            background: linear-gradient(90deg, #9b51e0, #4a90e2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .greet-desc { font-size: 12px; color: #666; line-height: 1.5; }
+
+        /* --- 3. 核心交互区（推荐问题 / 聊天记录） --- */
+        .glass-panel {
+            flex: 1;
+            margin: 0 20px;
+            margin-top: -40px; 
+            position: relative;
+            z-index: 10; 
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 20px;
+            box-shadow: 0 -5px 30px rgba(100, 100, 150, 0.08); 
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            overflow-y: auto;
+            
+            -ms-overflow-style: none;  
+            scrollbar-width: none; 
+            display: flex;
+            flex-direction: column;
+        }
+        .glass-panel::-webkit-scrollbar { display: none; }
+
+        .section-title { font-size: 16px; font-weight: bold; margin-bottom: 15px; display: flex; align-items: center;}
+        .section-title::after {
+            content: '💬'; font-size: 20px; margin-left: 8px; opacity: 0.6;
+        }
+        .rec-item {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            font-size: 13px;
+            color: #555;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            cursor: pointer;
+        }
+
+        #chat-content { display: none; flex-direction: column; height: 100%;}
+        
+        .status-badge {
+            align-self: flex-start;
+            background: rgba(155, 81, 224, 0.1);
+            color: #9b51e0;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-bottom: 15px;
+        }
+
+        .message-content {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #444;
+        }
+        .message-content strong { color: #9b51e0; }
+
+        /* --- 4. 底部长按语音控制区 --- */
+        .control-section {
+            padding: 15px 20px 30px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 160px;
+        }
+
+        .hint-text {
+            font-size: 13px;
+            color: #888888;
+            margin-bottom: 5px;
+            transition: color 0.3s;
+        }
+
+        #wave-canvas {
+            width: 200px;
+            height: 40px;
+            display: none; 
+            margin-bottom: 10px;
+        }
+
+        .wave-spacer {
+            height: 40px;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .mic-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 1);
+            box-shadow: 0 8px 25px rgba(155, 81, 224, 0.2);
+            color: #9b51e0;
+            font-size: 28px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            -webkit-tap-highlight-color: transparent;
+            touch-action: none; 
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="avatar-box">
-        <img class="avatar-image" id="static-avatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ccc' d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E">
-        <!-- 💡 修复手机端黑屏/全屏问题的视频标签 -->
-        <video id="video-container" playsinline webkit-playsinline></video>
+<div class="app-container">
+    <div class="top-nav">
+        <div class="icon-btn">≡</div>
+        <div class="nav-title">人工智能学院智能助手—小智</div> 
+        <div class="icon-btn" id="mute-btn">🔊</div>
+    </div>
+    <div class="weather-info">定位中...</div>
+
+    <div class="header-section">
+        <div class="avatar-container">
+            <img id="static-avatar" src="https://ai-avatar-wwl.oss-cn-beijing.aliyuncs.com/12.jpg">
+            <video id="video-container" playsinline webkit-playsinline></video>
+        </div>
+        <div class="greeting-container">
+            <div class="greet-title">👋 嗨，我是<span class="highlight-name">小智</span></div>
+            <div class="greet-desc">我可以回答问题，讲故事和播放音乐，也可以和我语音对话</div>
+        </div>
     </div>
 
-    <div class="chat-box">
-        <div class="status-text" id="status">系统待机中...</div>
-        <div class="message" id="message"></div>
+    <div class="glass-panel" id="main-panel">
+        <div id="recommend-content">
+            </div>
+        <div id="chat-content">
+            <div class="status-badge" id="status">系统已就绪，随时待命</div>
+            <div class="message-content" id="message">
+                期待与您的对话...
+            </div>
+        </div>
     </div>
 
-    <div class="control-panel">
-        <button id="mic-btn">🎙️ 点击说话</button>
+    <div class="control-section">
+        <div class="hint-text" id="hint-text">按住说话，上划取消</div>
+        <canvas id="wave-canvas" width="400" height="80"></canvas>
+        <div class="wave-spacer" id="wave-spacer"></div>
+        <div class="mic-btn" id="mic-btn">🎙️</div>
     </div>
 </div>
 
 <script>
-    // 你的公网固定照片链接 (平时待机显示的静止图片)
-    const FIXED_IMAGE_HTTPS_URL = "https://ai-avatar-wwl.oss-cn-beijing.aliyuncs.com/ren.jpg";
-    
-    // ⚠️ 记得在这里换上你 OSS 里的那个“2秒嘴巴在动”的万能短视频链接！！！
-    const LOOPING_VIDEO_URL = "https://ai-avatar-wwl.oss-cn-beijing.aliyuncs.com/video.mp4";
+    const LOOPING_VIDEO_URL = "./video.mp4"; 
+
+    // === 新增：问题库 ===
+    const QUESTIONS_POOL = [
+        "咱们学院有哪些专业？", "怎么查询课表和考试安排？", "学院领导和任课老师有哪些？", "实训室使用有什么规定？", "近期有哪些技能竞赛可以报名？", "奖助学金申请流程是什么？",
+        "人工智能技术应用专业核心课程有哪些？", "Python、机器学习该怎么入门学习？", "本专业可以使用哪些免费 AI 工具？", "数字媒体技术专业就业方向有哪些？", "课程设计 / 毕业设计有哪些参考方向？", "专业教材和学习资料在哪里领取？",
+        "学院各教研室负责人是谁？", "如何联系专业任课老师？", "转专业的条件和办理流程是什么？", "请假、补办证件怎么办理？", "成绩查询与复核流程是什么？", "日常教学管理有哪些规章制度？",
+        "学院有哪些专业实训室和实训基地？", "巴南实训基地相关管理规定是什么？", "本院常参加哪些职业技能大赛？", "竞赛报名时间和备赛要求有哪些？", "实训室使用规范与安全守则？", "校企合作企业有哪些，实训安排如何？",
+        "学院学生日常管理规章制度有哪些？", "宿舍、机房管理相关要求是什么？", "学生违纪处分相关规定？", "社团活动、集体活动审批流程？", "图书馆借阅规则及开放时间？", "最新学院通知文件在哪里查看？",
+        "计算机机房用电安全注意事项？", "如何防范网络诈骗、信息泄露？", "实验室应急处置方法有哪些？", "校园消防安全须知？", "数据安全使用有哪些规范？",
+        "本专业实习岗位和要求是什么？", "合作企业招聘信息在哪里查看？", "简历制作和面试有哪些技巧？", "专科升学相关政策与渠道？", "往届优秀毕业生就业情况如何？"
+    ];
 
     const staticAvatar = document.getElementById('static-avatar');
     const videoContainer = document.getElementById('video-container');
     const micBtn = document.getElementById('mic-btn');
+    const muteBtn = document.getElementById('mute-btn'); 
     const statusEl = document.getElementById('status');
     const messageEl = document.getElementById('message');
+    const hintText = document.getElementById('hint-text');
+    
+    const recommendContent = document.getElementById('recommend-content');
+    const chatContent = document.getElementById('chat-content');
 
-    if(FIXED_IMAGE_HTTPS_URL && FIXED_IMAGE_HTTPS_URL.startsWith('http')){
-        staticAvatar.src = FIXED_IMAGE_HTTPS_URL;
-    }
+    const waveCanvas = document.getElementById('wave-canvas');
+    const waveSpacer = document.getElementById('wave-spacer');
+    const canvasCtx = waveCanvas.getContext('2d');
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
     recognition.lang = 'zh-CN'; 
-    let isRecording = false;
+    recognition.continuous = false; 
 
-    micBtn.addEventListener('click', () => {
-        // --- 核心魔法：预激活手机端视频播放权限（防黑屏无声） ---
+    let isRecording = false;
+    let isAITalking = false; 
+    let isAIThinking = false; 
+    let isHolding = false;
+    let isCanceling = false;
+    let startY = 0;
+    const CANCEL_THRESHOLD = 50; 
+
+    // === 新增：渲染随机问题 ===
+    function renderRandomQuestions() {
+        // 随机抽取 4 个问题
+        const shuffled = [...QUESTIONS_POOL].sort(() => 0.5 - Math.random());
+        const selectedQuestions = shuffled.slice(0, 4);
+
+        let htmlContent = '<div class="section-title">推荐问题</div>';
+        selectedQuestions.forEach(q => {
+            htmlContent += `<div class="rec-item" onclick="handleRecommendClick('${q}')">${q} <span>›</span></div>`;
+        });
+        recommendContent.innerHTML = htmlContent;
+    }
+    
+    // 初始化时加载推荐问题
+    renderRandomQuestions();
+
+    // === 新增：点击推荐问题逻辑 ===
+    function handleRecommendClick(question) {
+        if (isAITalking || isAIThinking) return; // 如果正在回答则忽略点击
+
+        switchToChat();
+        messageEl.innerHTML = `<strong>你：</strong>${question}`;
+        statusEl.innerText = "正在云端思考...";
+        
+        // 设置状态，禁用底部录音麦克风
+        isAIThinking = true;
+        disableMicUI("小智正在思考，请稍候...");
+        stopVisualizer(); 
+        
+        // 发起请求
+        callDeepSeek(question);
+    }
+
+    // ==========================================
+    // 🔊 声音控制模块
+    // ==========================================
+    let isGlobalMuted = false;
+    let activeAudioPlayer = null; 
+
+    muteBtn.addEventListener('click', () => {
+        isGlobalMuted = !isGlobalMuted;
+        muteBtn.innerText = isGlobalMuted ? '🔇' : '🔊'; 
+        if (activeAudioPlayer) {
+            activeAudioPlayer.muted = isGlobalMuted;
+        }
+    });
+
+    function disableMicUI(reasonText) {
+        micBtn.style.opacity = '0.5';
+        hintText.innerText = reasonText;
+        hintText.style.color = "#888";
+    }
+
+    function enableMicUI() {
+        isAITalking = false;
+        isAIThinking = false;
+        micBtn.style.opacity = '1';
+        if (!isRecording && !isHolding) {
+            hintText.innerText = "按住说话，上划取消";
+            hintText.style.color = "#888";
+        }
+    }
+
+    function switchToChat() {
+        recommendContent.style.display = 'none';
+        chatContent.style.display = 'flex';
+    }
+
+    // --- 语音识别事件 ---
+    recognition.onerror = (event) => {
+        if (isCanceling) return; 
+        isRecording = false;
+        stopVisualizer();
+        enableMicUI();
+        hintText.innerText = "未听清，请重新按住说话";
+        setTimeout(() => enableMicUI(), 2000);
+    };
+
+    recognition.onend = () => {
+        if (isRecording && !isCanceling && !isAIThinking) {
+            isRecording = false;
+            stopVisualizer();
+            hintText.innerText = "未识别到声音，请重试";
+            setTimeout(() => enableMicUI(), 2000);
+        }
+    };
+
+    recognition.onresult = (event) => {
+        if (isCanceling) return; 
+        
+        const userText = event.results[0][0].transcript;
+        messageEl.innerHTML = `<strong>你：</strong>${userText}`;
+        statusEl.innerText = "正在云端思考...";
+        
+        isRecording = false;
+        isAIThinking = true;
+        disableMicUI("小智正在思考，请稍候...");
+        stopVisualizer(); 
+        
+        callDeepSeek(userText);
+    };
+
+    // --- 触控事件 ---
+    const handleInputStart = (e) => {
+        if (isAITalking || isAIThinking) {
+            hintText.innerText = isAITalking ? "小智正在讲话..." : "小智正在思考...";
+            return;
+        }
+        e.preventDefault(); 
+        
         videoContainer.muted = true; 
         videoContainer.play().then(() => {
             videoContainer.pause();      
             videoContainer.muted = false;
-        }).catch(err => {
-            console.log("权限预激活被忽略(正常现象)", err);
-        });
-        // -----------------------------------------------------
+        }).catch(() => {});
 
+        isHolding = true;
+        isCanceling = false;
+        startY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+        
+        micBtn.style.transform = 'scale(1.15)';
+        micBtn.style.boxShadow = '0 8px 30px rgba(155, 81, 224, 0.4)';
+        hintText.innerText = "松开发送，上划取消";
+        hintText.style.color = "#9b51e0";
+        
         if (!isRecording) {
-            recognition.start();
+            try { recognition.start(); } catch(err) {}
             statusEl.innerText = "正在聆听...";
-            micBtn.innerText = "🛑 录音中";
             isRecording = true;
+            switchToChat();
+            startVisualizer(); 
         }
-    });
-
-    recognition.onresult = (event) => {
-        const userText = event.results[0][0].transcript;
-        messageEl.innerHTML = `<strong>你：</strong>${userText}`;
-        statusEl.innerText = "大脑思考中...";
-        micBtn.innerText = "🎙️ 点击说话";
-        isRecording = false;
-        callDeepSeek(userText);
     };
 
-    // 1. 调用 Laf 大脑 chat 函数 (已更新为你的新链接)
+    const handleInputMove = (e) => {
+        if (!isHolding) return;
+        e.preventDefault();
+        let currentY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+        
+        if (startY - currentY > CANCEL_THRESHOLD) {
+            isCanceling = true;
+            hintText.innerText = "松开手指，取消发送";
+            hintText.style.color = "#ff4d4f"; 
+            micBtn.style.transform = 'scale(0.9)';
+            micBtn.style.background = "rgba(255, 77, 79, 0.1)";
+            micBtn.style.borderColor = "#ff4d4f";
+            micBtn.style.boxShadow = '0 8px 25px rgba(255, 77, 79, 0.3)';
+        } else {
+            isCanceling = false;
+            hintText.innerText = "松开发送，上划取消";
+            hintText.style.color = "#9b51e0";
+            micBtn.style.transform = 'scale(1.15)';
+            micBtn.style.background = "rgba(255, 255, 255, 0.6)";
+            micBtn.style.borderColor = "rgba(255, 255, 255, 1)";
+            micBtn.style.boxShadow = '0 8px 30px rgba(155, 81, 224, 0.4)';
+        }
+    };
+
+    const handleInputEnd = (e) => {
+        if (!isHolding) return;
+        isHolding = false;
+        
+        micBtn.style.transform = 'scale(1)';
+        micBtn.style.background = "rgba(255, 255, 255, 0.6)";
+        micBtn.style.borderColor = "rgba(255, 255, 255, 1)";
+        micBtn.style.boxShadow = '0 8px 25px rgba(155, 81, 224, 0.2)';
+        hintText.style.color = "#888888";
+        
+        if (isCanceling) {
+            hintText.innerText = "已取消发送";
+            recognition.abort(); 
+            isRecording = false;
+            stopVisualizer();
+            setTimeout(() => enableMicUI(), 1000); 
+        } else {
+            hintText.innerText = "正在处理语音...";
+            recognition.stop(); 
+        }
+    };
+
+    micBtn.addEventListener('touchstart', handleInputStart, { passive: false });
+    window.addEventListener('touchmove', handleInputMove, { passive: false });
+    window.addEventListener('touchend', handleInputEnd);
+    
+    micBtn.addEventListener('mousedown', handleInputStart);
+    window.addEventListener('mousemove', handleInputMove);
+    window.addEventListener('mouseup', handleInputEnd);
+
+    // ==========================================
+    // 🌊 波浪动画配置
+    // ==========================================
+    let audioContext, analyser, microphone, drawVisual;
+    let currentAmplitude = 0; 
+    let phase = 0; 
+
+    const userWaves = [
+        { color: 'rgba(186, 85, 211, 0.8)', speed: 1.0, height: 1.0, lineWidth: 3 },
+        { color: 'rgba(216, 112, 214, 0.5)', speed: 1.3, height: 0.7, lineWidth: 2 },
+        { color: 'rgba(238, 130, 238, 0.4)', speed: 0.8, height: 0.5, lineWidth: 2 }
+    ];
+
+    const aiWaves = [
+        { color: 'rgba(74, 144, 226, 0.8)', speed: 1.0, height: 1.0, lineWidth: 3 },
+        { color: 'rgba(100, 181, 246, 0.5)', speed: 1.3, height: 0.7, lineWidth: 2 },
+        { color: 'rgba(144, 202, 249, 0.4)', speed: 0.8, height: 0.5, lineWidth: 2 }
+    ];
+
+    function drawWave() {
+        if (!isRecording && !isAITalking) return; 
+        drawVisual = requestAnimationFrame(drawWave);
+
+        let averageVolume = 0;
+
+        if (isRecording && analyser) {
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            analyser.getByteFrequencyData(dataArray); 
+            let sum = 0;
+            for(let i = 0; i < bufferLength; i++) sum += dataArray[i];
+            averageVolume = sum / bufferLength;
+        } else if (isAITalking) {
+            averageVolume = 30 + Math.random() * 40; 
+        }
+        
+        let targetAmplitude = (averageVolume / 100); 
+        if (targetAmplitude < 0.1) targetAmplitude = 0.1; 
+        currentAmplitude += (targetAmplitude - currentAmplitude) * 0.15;
+
+        canvasCtx.clearRect(0, 0, waveCanvas.width, waveCanvas.height);
+        phase += 0.08; 
+
+        const centerY = waveCanvas.height / 2;
+        const width = waveCanvas.width;
+        const currentWaves = isRecording ? userWaves : aiWaves;
+
+        currentWaves.forEach(wave => {
+            canvasCtx.beginPath();
+            canvasCtx.moveTo(0, centerY);
+            for (let x = 0; x <= width; x++) {
+                const xNorm = x / width;
+                const taper = Math.sin(xNorm * Math.PI); 
+                const y = centerY + Math.sin(xNorm * 8 + phase * wave.speed) * (currentAmplitude * 40 * wave.height) * taper;
+                canvasCtx.lineTo(x, y);
+            }
+            canvasCtx.strokeStyle = wave.color;
+            canvasCtx.lineWidth = wave.lineWidth;
+            canvasCtx.stroke();
+        });
+    }
+
+    async function startVisualizer() {
+        if (!audioContext) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                microphone = audioContext.createMediaStreamSource(stream);
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256; 
+                microphone.connect(analyser);
+            } catch(err) {
+                return; 
+            }
+        }
+        if (audioContext.state === 'suspended') audioContext.resume();
+        waveSpacer.style.display = 'none';
+        waveCanvas.style.display = 'block';
+        if (!drawVisual) drawWave();
+    }
+
+    function startAIVisualizer() {
+        isAITalking = true;
+        waveSpacer.style.display = 'none';
+        waveCanvas.style.display = 'block';
+        if (!drawVisual) drawWave();
+    }
+
+    function stopVisualizer() {
+        isAITalking = false; 
+        if (drawVisual) {
+            cancelAnimationFrame(drawVisual);
+            drawVisual = null;
+        }
+        waveCanvas.style.display = 'none';
+        waveSpacer.style.display = 'block';
+    }
+
+    // ==========================================
+    // 🧠 接口交互
+    // ==========================================
     async function callDeepSeek(text) {
         try {
             const dsResponse = await fetch('https://ojr9d97ks4.sealosbja.site/chat', {
@@ -123,23 +597,19 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ text: text })
             });
-            
             const data = await dsResponse.json();
             const aiReply = data.reply;
-            messageEl.innerHTML = `<strong>AI：</strong>${aiReply}`;
-            
+            messageEl.innerHTML = `<strong>你：</strong>${text}<br><br><strong>小智：</strong>${aiReply}`; 
             generateTalkingHeadVideo(aiReply);
         } catch (error) {
-            statusEl.innerText = "网络连接出错";
-            console.error(error);
+            statusEl.innerText = "网络连接出现波动";
+            enableMicUI();
         }
     }
 
-    // 2. 调用 Laf 极速语音生成 generate 函数 (已更新为你的新链接)
     async function generateTalkingHeadVideo(text) {
         try {
-            statusEl.innerText = "正在生成语音...";
-            
+            statusEl.innerText = "正在合成专属语音...";
             const generateRes = await fetch('https://ojr9d97ks4.sealosbja.site/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -150,42 +620,69 @@
             
             if (!audioUrl) throw new Error("获取音频失败");
 
-            // --- 循环视频+语音播放魔法 ---
             const safeAudioUrl = audioUrl.replace("http://", "https://");
             const audioPlayer = new Audio(safeAudioUrl);
             
-            // 隐藏静态图，播放循环动嘴视频
+            activeAudioPlayer = audioPlayer;
+            audioPlayer.muted = isGlobalMuted;
+            
             staticAvatar.style.display = 'none';
             videoContainer.src = LOOPING_VIDEO_URL;
             videoContainer.loop = true; 
             videoContainer.style.display = 'block';
-
-            // 👉 关键补丁：强制浏览器加载新的视频源
             videoContainer.load(); 
-
             videoContainer.muted = true; 
-            // 稍微延迟一丢丢再播放，给浏览器一点缓冲时间
-            setTimeout(() => {
-                videoContainer.play();
-            }, 100);
+            
+            setTimeout(() => { videoContainer.play(); }, 100);
 
-            // 播放真实的生成声音
-            statusEl.innerText = "播放中...";
+            statusEl.innerText = "正在为您解答";
+            isAIThinking = false;
+            disableMicUI("小智正在讲话...");
+
             audioPlayer.play();
+            startAIVisualizer(); 
 
-            // 监听到声音放完，瞬间切回静态图
             audioPlayer.onended = () => {
+                activeAudioPlayer = null; 
                 videoContainer.pause();
                 videoContainer.style.display = 'none';
                 staticAvatar.style.display = 'block';
-                statusEl.innerText = "系统待机中...";
+                statusEl.innerText = "系统已就绪，随时待命";
+                
+                stopVisualizer(); 
+                enableMicUI();    
             };
-
         } catch (error) {
-            statusEl.innerText = "播放失败";
-            console.error(error);
+            activeAudioPlayer = null;
+            statusEl.innerText = "播放遇到问题";
+            stopVisualizer(); 
+            enableMicUI(); 
         }
     }
+
+    // --- 天气模块 ---
+    const weatherEl = document.querySelector('.weather-info');
+    async function fetchRealTimeWeather() {
+        if (!navigator.geolocation) return;
+        navigator.geolocation.getCurrentPosition(async (position) => {
+            try {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&addressdetails=1`, { headers: { 'Accept-Language': 'zh-CN' } });
+                const geoData = await geoRes.json();
+                const city = geoData.address.city || geoData.address.town || "当地";
+                const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
+                const weatherData = await weatherRes.json();
+                const temp = Math.round(weatherData.current_weather.temperature);
+                const code = weatherData.current_weather.weathercode;
+                let weatherDesc = "晴 ☀️";
+                if (code >= 1 && code <= 3) weatherDesc = "多云 ⛅";
+                else if (code >= 51 && code <= 67) weatherDesc = "雨 🌧️";
+                weatherEl.innerText = `${city} ${temp}°C ${weatherDesc}`;
+            } catch (e) {}
+        });
+    }
+    fetchRealTimeWeather();
 </script>
 </body>
 </html>

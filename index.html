@@ -128,6 +128,7 @@
         }
 
         /* 🌟 核心修改区：让图片和视频完美重叠，并加入透明度过渡动画实现丝滑切换 */
+        /* 🌟 核心修改区：让图片和视频完美重叠，并加入透明度过渡动画实现丝滑切换 */
         .avatar-container img, .avatar-container video {
             width: 100%;
             height: 100%;
@@ -136,8 +137,8 @@
             position: absolute;
             left: 0; 
             top: 0;
-            background: #ffffff;
-            transition: opacity 0.4s ease-in-out; /* 淡入淡出动画 */
+            background: transparent; /* 💡 修改：将 #ffffff 替换为 transparent */
+            transition: opacity 0.4s ease-in-out; 
         }
 
        .greeting-container {
@@ -358,6 +359,25 @@
             z-index: -1;
             pointer-events: none;
             transition: opacity 0.1s linear; 
+        }
+        /* 🔄 换一换按钮样式 */
+        .refresh-btn {
+            display: flex;
+            align-items: center;
+            font-size: 13px;
+            color: #9b51e0;
+            cursor: pointer;
+            font-weight: normal;
+            transition: opacity 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .refresh-btn:active {
+            opacity: 0.5;
+        }
+        .refresh-icon {
+            margin-right: 4px;
+            /* 旋转动画缓动函数 */
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -644,82 +664,155 @@
     // 🤖 丝滑状态切换引擎 (淡入淡出核心)
     // ==========================================
     // ==========================================
-    // 🤖 丝滑状态切换引擎 (新增背景呼吸灯控制)
+    // 🤖 丝滑状态切换引擎 (修复手机端硬件解码白屏)
     // ==========================================
     function switchAvatarState(state) {
         if (state === 'idle') {
-            document.body.classList.remove('talking-mode'); // 关闭呼吸灯
-            
+            document.body.classList.remove('talking-mode'); 
             staticAvatar.style.opacity = '1';
-            thinkingVideo.style.opacity = '0';
-            talkingVideo.style.opacity = '0';
             
+            // 延迟淡出视频，确保静态图片已显现
             setTimeout(() => {
-                thinkingVideo.pause();
-                talkingVideo.pause();
-            }, 400);
+                thinkingVideo.style.opacity = '0';
+                talkingVideo.style.opacity = '0';
+            }, 50);
+            
+            setTimeout(() => { thinkingVideo.pause(); talkingVideo.pause(); }, 400);
             
         } else if (state === 'thinking') {
-            document.body.classList.remove('talking-mode'); // 关闭呼吸灯
-            
+            document.body.classList.remove('talking-mode'); 
+            thinkingVideo.currentTime = 0; // 重置进度
             thinkingVideo.play().catch(()=>{});
-            staticAvatar.style.opacity = '0';
             thinkingVideo.style.opacity = '1';
-            talkingVideo.style.opacity = '0';
+            
+            // 延迟淡出其它图层
+            setTimeout(() => {
+                staticAvatar.style.opacity = '0';
+                talkingVideo.style.opacity = '0';
+            }, 50);
             
             setTimeout(() => { talkingVideo.pause(); }, 400);
             
         } else if (state === 'talking') {
-            document.body.classList.add('talking-mode'); // 开启蓝色呼吸灯
+            document.body.classList.add('talking-mode'); 
             
+            talkingVideo.currentTime = 0; 
             talkingVideo.play().catch(()=>{});
-            staticAvatar.style.opacity = '0';
-            thinkingVideo.style.opacity = '0';
             talkingVideo.style.opacity = '1';
+            
+            // 💡 核心修复：延迟 100ms 隐藏思考视频，给手机芯片解码第一帧的时间，彻底杜绝白屏闪烁！
+            setTimeout(() => {
+                staticAvatar.style.opacity = '0';
+                thinkingVideo.style.opacity = '0';
+            }, 100); 
             
             setTimeout(() => { thinkingVideo.pause(); }, 400);
         }
     }
 
-   // === 渲染随机问题 (加入现代矢量图标) ===
+   // ==========================================
+    // 💡 推荐问题区域渲染 (新增换一换功能)
+    // ==========================================
+    
+    // 1. 初始化框架（渲染标题和按钮，容器留空）
+    function initRecommendSection() {
+        recommendContent.innerHTML = `
+            <div class="section-title" style="justify-content: space-between;">
+                <div style="display: flex; align-items: center;">
+                    推荐问题
+                    <svg style="margin-left: 6px; color: #9b51e0;" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+                    </svg>
+                </div>
+                <div class="refresh-btn" onclick="refreshQuestions(event)">
+                    <svg class="refresh-icon" id="refresh-svg" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="23 4 23 10 17 10"></polyline>
+                        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                    </svg>
+                    换一换
+                </div>
+            </div>
+            <div id="rec-list-container" style="transition: opacity 0.3s ease;"></div>
+        `;
+        renderRandomQuestions(); // 首次渲染列表
+    }
+
+    // 2. 仅渲染下方列表（带淡入淡出动画）
     function renderRandomQuestions() {
+        const container = document.getElementById('rec-list-container');
+        if (!container) return;
+        
+        // 随机抽取 4 个问题
         const shuffled = [...QUESTIONS_POOL].sort(() => 0.5 - Math.random());
         const selectedQuestions = shuffled.slice(0, 4);
         
-        // 💡 核心修改：加入一个紫色的“指南针(探索)” SVG 图标，寓意发现与推荐
-        let htmlContent = `
-            <div class="section-title">
-                推荐问题
-                <svg style="margin-left: 6px; color: #9b51e0;" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
-                </svg>
-            </div>
-        `;
-        
+        let htmlContent = '';
         selectedQuestions.forEach(q => {
             htmlContent += `<div class="rec-item" onclick="handleRecommendClick('${q}')">${q} <span>›</span></div>`;
         });
-        recommendContent.innerHTML = htmlContent;
+        
+        // 先变透明，等 150ms 注入新内容后再淡入
+        container.style.opacity = '0';
+        setTimeout(() => {
+            container.innerHTML = htmlContent;
+            container.style.opacity = '1';
+        }, 150);
     }
-    renderRandomQuestions();
 
-    // === 点击推荐问题逻辑 ===
+    // 3. 点击“换一换”触发的事件
+    let refreshRotate = 0; // 记录当前旋转角度
+    function refreshQuestions(e) {
+        if(e) e.stopPropagation();
+        
+        // 执行刷新图标的顺时针旋转动画
+        const icon = document.getElementById('refresh-svg');
+        if (icon) {
+            refreshRotate += 360;
+            icon.style.transform = `rotate(${refreshRotate}deg)`;
+        }
+        
+        // 重新抽取并渲染内容
+        renderRandomQuestions();
+    }
+
+    // 启动初始渲染
+    initRecommendSection();
+
+    // === 点击推荐问题逻辑 (彻底修复思考视频不出的问题) ===
     function handleRecommendClick(question) {
         if (isAITalking || isAIThinking) return; 
 
+        // 🚀 核心修复：只解锁“说话视频”，去掉“思考视频”的解锁 hack
+        // 因为下面马上就会直接调用 play() 播放思考视频，如果加了 hack，反而会被异步的 pause() 误伤强制暂停
+        talkingVideo.play().then(() => talkingVideo.pause()).catch(() => {});
+
         switchToChat();
-        messageEl.innerHTML = `<strong>你：</strong>${question}`;
-        statusEl.innerText = "正在云端思考...";
+        messageEl.innerHTML = `
+            <div class="user-text-style"><strong>🧑 你：</strong>${question}</div>
+            <div class="ai-generating-wrapper">
+                <svg class="ai-sparkle-icon" viewBox="0 0 24 24" width="18" height="18" fill="url(#sparkle-grad)">
+                    <defs>
+                        <linearGradient id="sparkle-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#9b51e0" />
+                            <stop offset="100%" stop-color="#4a90e2" />
+                        </linearGradient>
+                    </defs>
+                    <path d="M12 2L14.4 9.6L22 12L14.4 14.4L12 22L9.6 14.4L2 12L9.6 9.6L12 2Z"></path>
+                </svg>
+                小智正在极速检索知识库...
+            </div>
+        `;
+        statusEl.innerText = "正在为您检索信息";
         
         isAIThinking = true;
         disableMicUI("小智正在思考，请稍候...");
         stopVisualizer(); 
         
-        switchAvatarState('thinking'); // 切为思考状态
+        // 直接进入思考状态，此时浏览器由于检测到是用户的 Click 点击事件，会直接放行 play()
+        switchAvatarState('thinking'); 
         callDeepSeek(question);
     }
-
     // ==========================================
     // 🔊 声音控制模块
     // ==========================================

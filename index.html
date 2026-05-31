@@ -58,6 +58,17 @@
             overflow: hidden;
             user-select: none;
             -webkit-user-select: none;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            /* 阻止 iOS 点击产生灰色/蓝色高亮半透明遮罩 */
+            -webkit-tap-highlight-color: transparent; 
+            /* 阻止长按出现默认菜单（保存图片、全屏等） */
+            -webkit-touch-callout: none;
+            /* 阻止浏览器默认的下拉回弹（橡皮筋效果）和手势导航 */
+            overscroll-behavior-y: none;
+            touch-action: pan-y;
         }
 
         .app-container { 
@@ -150,31 +161,43 @@
         .greet-desc { font-size: 12px; color: #666; line-height: 1.5; }
 
         /* --- 3. 核心交互区 --- */
+       /* --- 核心交互区 (修复文字触顶问题) --- */
+        /* --- 核心交互区 (提升通透度，让底光透出来) --- */
         .glass-panel {
             flex: 1;
             margin: 0 20px;
             margin-top: -40px; 
             position: relative;
             z-index: 10; 
-            background: rgba(255, 255, 255, 0.75);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            /* 💡 核心修改：将白色背景的不透明度从 0.75 降到 0.45 */
+            background: rgba(255, 255, 255, 0.45);
+            /* 加强模糊效果，让透出来的光芒更柔和高级 */
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
             border-radius: 24px;
-            padding: 20px;
-            box-shadow: 0 -5px 30px rgba(100, 100, 150, 0.08); 
-            border: 1px solid rgba(255, 255, 255, 0.9);
-            overflow-y: auto;
-            -ms-overflow-style: none;  
-            scrollbar-width: none; 
+            padding: 20px 20px 0 20px; 
+            /* 添加一点微弱的内发光，增强立体感 */
+            box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.5), 0 -5px 30px rgba(100, 100, 150, 0.08); 
+            border: 1px solid rgba(255, 255, 255, 0.8);
             display: flex;
             flex-direction: column;
+            overflow: hidden; 
         }
-        .glass-panel::-webkit-scrollbar { display: none; }
 
-        .section-title { font-size: 16px; font-weight: bold; margin-bottom: 15px; display: flex; align-items: center;}
-        .section-title::after { content: '💬'; font-size: 20px; margin-left: 8px; opacity: 0.6; }
-        
-        .rec-item {
+        /* 💡 核心修改：让内部容器独立滚动，这样顶部的 20px 留白就会永远存在，文字到了这里就会被裁切 */
+        #recommend-content, #chat-content {
+            flex: 1;
+            overflow-y: auto;
+            -ms-overflow-style: none;  
+            scrollbar-width: none;
+            padding-bottom: 20px; /* 补回底部的留白 */
+        }
+        #recommend-content::-webkit-scrollbar, #chat-content::-webkit-scrollbar { display: none; }
+
+        #chat-content { display: none; flex-direction: column; height: 100%; }
+
+        /* 移除原有的 emoji 图标，后续在 JS 中用 SVG 替代 */
+        .section-title { font-size: 16px; font-weight: bold; margin-bottom: 15px; display: flex; align-items: center; color: #333;}  .rec-item {
             background: rgba(255, 255, 255, 0.9);
             padding: 12px 16px;
             border-radius: 12px;
@@ -249,14 +272,13 @@
         
         body::before {
             content: '';
-            position: fixed; /* 修复边缘线问题，固定在窗口不受任何撑开影响 */
+            position: fixed; 
             top: 0; left: 0; right: 0; bottom: 0;
-            background: radial-gradient(circle at center 30%, rgba(74, 144, 226, 0.45) 0%, rgba(74, 144, 226, 0) 70%);
-            /* 通过 JS 动态注入透明度变量，默认是 0 */
+            /* 💡 核心修改：扩大光晕范围（70% -> 85%），增强基础透明度（0.45 -> 0.65） */
+            background: radial-gradient(circle at center 35%, rgba(74, 144, 226, 0.65) 0%, rgba(74, 144, 226, 0) 85%);
             opacity: var(--bg-light-opacity, 0); 
             z-index: -1;
             pointer-events: none;
-            /* 极短的过渡时间，使得光晕跳动不卡顿且顺滑 */
             transition: opacity 0.1s linear; 
         }
     </style>
@@ -267,7 +289,7 @@
 <div class="app-container">
     <div class="top-nav">
         <div class="icon-btn">≡</div>
-        <div class="nav-title">人工智能学院智能助手—小智</div> 
+        <div class="nav-title">小智</div> 
         <div class="icon-btn" id="mute-btn" style="display: flex; align-items: center;">
             <svg id="vol-on-icon" viewBox="0 0 24 24" width="22" height="22" stroke="#333" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
                 <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
@@ -290,7 +312,7 @@
         
         <div class="greeting-container">
             <div class="greet-title">👋 嗨，我是<span class="highlight-name">小智</span></div>
-            <div class="greet-desc">我是你的专属校园助手。你的校园生活指南，有问题都可以随时按住下方与我语音交流哦！</div>
+            <div class="greet-desc">我是人工智能学院专属助手小智，你的AI学习与生活指南，按住下方即可语音交流!</div>
         </div>
     </div>
 
@@ -392,11 +414,22 @@
         }
     }
 
-    // === 渲染随机问题 ===
+   // === 渲染随机问题 (加入现代矢量图标) ===
     function renderRandomQuestions() {
         const shuffled = [...QUESTIONS_POOL].sort(() => 0.5 - Math.random());
         const selectedQuestions = shuffled.slice(0, 4);
-        let htmlContent = '<div class="section-title">推荐问题</div>';
+        
+        // 💡 核心修改：加入一个紫色的“指南针(探索)” SVG 图标，寓意发现与推荐
+        let htmlContent = `
+            <div class="section-title">
+                推荐问题
+                <svg style="margin-left: 6px; color: #9b51e0;" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+                </svg>
+            </div>
+        `;
+        
         selectedQuestions.forEach(q => {
             htmlContent += `<div class="rec-item" onclick="handleRecommendClick('${q}')">${q} <span>›</span></div>`;
         });
@@ -581,6 +614,9 @@
     const userWaves = [ { color: 'rgba(186, 85, 211, 0.8)', speed: 1.0, height: 1.0, lineWidth: 3 }, { color: 'rgba(216, 112, 214, 0.5)', speed: 1.3, height: 0.7, lineWidth: 2 }, { color: 'rgba(238, 130, 238, 0.4)', speed: 0.8, height: 0.5, lineWidth: 2 } ];
     const aiWaves = [ { color: 'rgba(74, 144, 226, 0.8)', speed: 1.0, height: 1.0, lineWidth: 3 }, { color: 'rgba(100, 181, 246, 0.5)', speed: 1.3, height: 0.7, lineWidth: 2 }, { color: 'rgba(144, 202, 249, 0.4)', speed: 0.8, height: 0.5, lineWidth: 2 } ];
 
+    // ==========================================
+    // 🌊 波浪动画引擎 (已修复音量模拟与声光同步)
+    // ==========================================
     function drawWave() {
         if (!isRecording && !isAITalking) {
             document.body.style.setProperty('--bg-light-opacity', '0'); // 停止时关灯
@@ -589,7 +625,7 @@
         drawVisual = requestAnimationFrame(drawWave);
         let averageVolume = 0;
         
-        // 尝试从分析器中获取真实声音数据 (无论是麦克风还是 AI 音频)
+        // 1. 尝试从分析器中获取真实声音数据 (主要针对麦克风录音时)
         if (analyser) {
             const bufferLength = analyser.frequencyBinCount; 
             const dataArray = new Uint8Array(bufferLength);
@@ -598,35 +634,38 @@
             averageVolume = sum / bufferLength;
         }
 
-        // 兜底逻辑：如果 AI 在说话但由于跨域/缓存没获取到真实频段，则模拟一个类似说话的起伏节奏
+        // 🚨 2. 核心修复点：找回丢失的兜底模拟逻辑！
+        // 如果 AI 在说话，但由于没有接入分析器拿不到真实音量，则用数学公式模拟出一个逼真的呼吸节奏
         if (isAITalking && averageVolume < 2) {
-             const time = Date.now() / 150;
-             averageVolume = 25 + Math.sin(time) * 15 + Math.random() * 15;
+             const time = Date.now() / 150; // 控制呼吸频率
+             averageVolume = 25 + Math.sin(time) * 15 + Math.random() * 15; // 正弦波结合随机数模拟语音抑扬顿挫
         }
 
-        // 计算当前平滑振幅
+        // 3. 计算当前平滑振幅
         let targetAmplitude = (averageVolume / 100); 
-        if (targetAmplitude < 0.1) targetAmplitude = 0.1; 
-        currentAmplitude += (targetAmplitude - currentAmplitude) * 0.15;
+        if (targetAmplitude < 0.1) targetAmplitude = 0.1; // 设定一个最小的基准线
+        currentAmplitude += (targetAmplitude - currentAmplitude) * 0.15; // 运用缓动算法让变化更丝滑
 
-        // 🔵 将平滑后的振幅映射为蓝色背景灯的透明度，实现声光同步
+        // 🔵 4. 将平滑后的振幅映射为蓝色背景灯的透明度，实现声光同步
         if (isAITalking) {
-            let lightOpacity = currentAmplitude * 1.1; // 放大一点亮度感
-            if (lightOpacity > 0.85) lightOpacity = 0.85; // 封顶最高亮度
+            let lightOpacity = currentAmplitude * 1.5; // 💡 增强基础光芒倍数，让呼吸灯更明显
+            if (lightOpacity > 1.0) lightOpacity = 1.0; // 封顶最高亮度为 100%
             document.body.style.setProperty('--bg-light-opacity', lightOpacity.toFixed(2));
         } else {
             document.body.style.setProperty('--bg-light-opacity', '0');
         }
 
-        // 绘制波浪线
+        // 5. 绘制底部波浪线
         canvasCtx.clearRect(0, 0, waveCanvas.width, waveCanvas.height);
         phase += 0.08; 
         const centerY = waveCanvas.height / 2; const width = waveCanvas.width;
+        // 用户录音用紫色波浪 (userWaves)，AI 回答用蓝色波浪 (aiWaves)
         const currentWaves = isRecording ? userWaves : aiWaves;
         currentWaves.forEach(wave => {
             canvasCtx.beginPath(); canvasCtx.moveTo(0, centerY);
             for (let x = 0; x <= width; x++) {
                 const xNorm = x / width; const taper = Math.sin(xNorm * Math.PI); 
+                // 这里的 currentAmplitude 就是上面的音量数据，如果有起伏，波浪就会跟着跳动
                 const y = centerY + Math.sin(xNorm * 8 + phase * wave.speed) * (currentAmplitude * 40 * wave.height) * taper;
                 canvasCtx.lineTo(x, y);
             }
@@ -758,26 +797,92 @@
             messageEl.innerHTML = `<strong>你：</strong>${userText}<br><br><strong>小智：</strong><div class="ai-response-format">${formattedHTML}</div>`; 
         }
     }
-    // --- 天气模块 ---
+    // ==========================================
+    // ⛅ 天气模块 (专为手机端优化的鲁棒定位逻辑)
+    // ==========================================
     const weatherEl = document.querySelector('.weather-info');
-    async function fetchRealTimeWeather() {
-        if (!navigator.geolocation) return;
-        navigator.geolocation.getCurrentPosition(async (position) => {
-            try {
-                const lat = position.coords.latitude; const lon = position.coords.longitude;
-                const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&addressdetails=1`, { headers: { 'Accept-Language': 'zh-CN' } });
-                const geoData = await geoRes.json();
-                const city = geoData.address.city || geoData.address.town || "当地";
-                const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
-                const weatherData = await weatherRes.json();
-                const temp = Math.round(weatherData.current_weather.temperature);
-                const code = weatherData.current_weather.weathercode;
-                let weatherDesc = "晴 ☀️";
-                if (code >= 1 && code <= 3) weatherDesc = "多云 ⛅"; else if (code >= 51 && code <= 67) weatherDesc = "雨 🌧️";
-                weatherEl.innerText = `${city} ${temp}°C ${weatherDesc}`;
-            } catch (e) {}
-        });
+
+    // 解析更丰富的天气状态代码 (Open-Meteo WMO 代码规范)
+    function getWeatherDesc(code) {
+        if (code === 0) return "晴 ☀️";
+        if (code === 1 || code === 2) return "多云 ⛅";
+        if (code === 3) return "阴 ☁️";
+        if (code >= 45 && code <= 48) return "雾 🌫️";
+        if (code >= 51 && code <= 67) return "雨 🌧️";
+        if (code >= 71 && code <= 77) return "雪 ❄️";
+        if (code >= 80 && code <= 82) return "阵雨 🌦️";
+        if (code >= 95) return "雷暴 ⛈️";
+        return "未知";
     }
+
+    // 根据坐标获取并渲染天气
+    async function fetchWeatherByCoords(lat, lon, cityName) {
+        try {
+            const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=auto`);
+            const weatherData = await weatherRes.json();
+            const temp = Math.round(weatherData.current_weather.temperature);
+            const code = weatherData.current_weather.weathercode;
+            const desc = getWeatherDesc(code);
+            weatherEl.innerText = `${cityName} ${temp}°C ${desc}`;
+        } catch (e) {
+            weatherEl.innerText = "天气加载失败";
+        }
+    }
+
+    function fetchRealTimeWeather() {
+        // 🚨 兜底策略：如果定位失败、超时或用户拒绝，默认显示学院所在地（重庆）
+        const defaultLat = 29.53;
+        const defaultLon = 106.55;
+        const defaultCity = "重庆";
+
+        if (!navigator.geolocation) {
+            fetchWeatherByCoords(defaultLat, defaultLon, defaultCity);
+            return;
+        }
+
+        // 定位参数配置
+        const options = {
+            enableHighAccuracy: false, // 关闭高精度（采用基站定位即可），能大幅提高手机端出结果的速度
+            timeout: 5000,             // 最高等待 5 秒，超过 5 秒算作失败
+            maximumAge: 300000         // 允许使用 5 分钟内的缓存位置
+        };
+
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                try {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    
+                    // 使用 AbortController 为城市名称解析接口增加 3 秒超时限制
+                    const geoCtrl = new AbortController();
+                    const geoTimeout = setTimeout(() => geoCtrl.abort(), 3000);
+                    
+                    const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&addressdetails=1`, { 
+                        headers: { 'Accept-Language': 'zh-CN' },
+                        signal: geoCtrl.signal 
+                    });
+                    clearTimeout(geoTimeout);
+                    
+                    const geoData = await geoRes.json();
+                    let city = geoData.address.city || geoData.address.town || geoData.address.county || "当地";
+                    city = city.replace(/市$|区$|县$/, ''); // 优化视觉：去掉后缀，例如把"重庆市"精简为"重庆"
+                    
+                    fetchWeatherByCoords(lat, lon, city);
+                } catch (e) {
+                    // 如果城市名称接口超时或被拦截，不要卡死，直接用坐标查天气，名称显示"当地"
+                    fetchWeatherByCoords(position.coords.latitude, position.coords.longitude, "当地");
+                }
+            },
+            (error) => {
+                console.warn("手机定位受限或超时，启用默认城市兜底。原因:", error.message);
+                // 核心修复：一旦定位失败（如微信环境无权限），立刻显示兜底城市天气，不再卡在“定位中...”
+                fetchWeatherByCoords(defaultLat, defaultLon, defaultCity);
+            },
+            options
+        );
+    }
+    
+    // 初始化调用
     fetchRealTimeWeather();
 </script>
 </body>

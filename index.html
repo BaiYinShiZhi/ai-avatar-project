@@ -1,756 +1,1138 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
     <title>AI 智能助手 - 小智</title>
     <style>
-        /* 🌟 现代 AI 思考状态动画 (流光文字 + 呼吸星芒) */
-        .ai-generating-wrapper {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-top: 15px;
-            font-size: 14.5px;
-            font-weight: 600;
-            /* 流光渐变色配置 */
-            background: linear-gradient(90deg, #9b51e0, #4a90e2, #9b51e0);
-            background-size: 200% auto;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            animation: gradientShine 2.5s linear infinite;
+      /* 🌟 现代 AI 思考状态动画 (流光文字 + 呼吸星芒) */
+      .ai-generating-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 15px;
+        font-size: 14.5px;
+        font-weight: 600;
+        /* 流光渐变色配置 */
+        background: linear-gradient(90deg, #9b51e0, #4a90e2, #9b51e0);
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: gradientShine 2.5s linear infinite;
+      }
+
+      /* 保证图标垂直居中，并加入闪烁动画 */
+      .ai-sparkle-icon {
+        display: inline-block;
+        animation: pulseSparkle 1.5s ease-in-out infinite;
+      }
+
+      @keyframes gradientShine {
+        to {
+          background-position: 200% center;
+        }
+      }
+
+      @keyframes pulseSparkle {
+        0%,
+        100% {
+          transform: scale(0.85);
+          opacity: 0.6;
+        }
+        50% {
+          transform: scale(1.1);
+          opacity: 1;
+          filter: drop-shadow(0 0 6px rgba(155, 81, 224, 0.5));
+        }
+      }
+
+      /* 顺便美化一下用户的提问文本 */
+      .user-text-style {
+        color: #555;
+        font-size: 14px;
+        line-height: 1.5;
+        padding-bottom: 5px;
+        border-bottom: 1px dashed rgba(0, 0, 0, 0.05);
+      }
+      /* --- 核心亮色拟态背景 --- */
+      body {
+        margin: 0;
+        padding: 0;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+          Arial, sans-serif;
+        background: linear-gradient(
+          160deg,
+          #fdfaff 0%,
+          #f0ebff 40%,
+          #e6f0ff 80%,
+          #f3ebff 100%
+        );
+        color: #333333;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+        user-select: none;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        /* 阻止 iOS 点击产生灰色/蓝色高亮半透明遮罩 */
+        -webkit-tap-highlight-color: transparent;
+        /* 阻止长按出现默认菜单（保存图片、全屏等） */
+        -webkit-touch-callout: none;
+        /* 阻止浏览器默认的下拉回弹（橡皮筋效果）和手势导航 */
+        overscroll-behavior-y: none;
+        touch-action: pan-y;
+      }
+
+      .app-container {
+        width: 100%;
+        max-width: 400px;
+        height: 100%;
+        max-height: 850px;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+      }
+      .header-section::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 77px; 
+            transform: translate(-50%, -50%);
+            width: 360px;  /* 💡 从 220px 扩大到 360px */
+            height: 360px; /* 💡 从 220px 扩大到 360px */
+            /* 💡 加大了 100% 纯白核心区的比例(45%)，确保覆盖整个 115x175 的矩形边缘 */
+            background: radial-gradient(circle, rgba(255,255,255,1) 30%, rgba(255, 255, 255, 0.61) 40%, rgba(255, 255, 255, 0) 45%);
+            z-index: 0;
+            pointer-events: none;
         }
 
-        /* 保证图标垂直居中，并加入闪烁动画 */
-        .ai-sparkle-icon {
-            display: inline-block;
-            animation: pulseSparkle 1.5s ease-in-out infinite;
-        }
-
-        @keyframes gradientShine {
-            to { background-position: 200% center; }
-        }
-
-        @keyframes pulseSparkle {
-            0%, 100% { transform: scale(0.85); opacity: 0.6; }
-            50% { transform: scale(1.1); opacity: 1; filter: drop-shadow(0 0 6px rgba(155, 81, 224, 0.5)); }
-        }
-        
-        /* 顺便美化一下用户的提问文本 */
-        .user-text-style {
-            color: #555;
-            font-size: 14px;
-            line-height: 1.5;
-            padding-bottom: 5px;
-            border-bottom: 1px dashed rgba(0,0,0,0.05);
-        }
-        /* --- 核心亮色拟态背景 --- */
-        body { 
-            margin: 0; 
-            padding: 0; 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background: linear-gradient(160deg, #fdfaff 0%, #f0ebff 40%, #e6f0ff 80%, #f3ebff 100%);
-            color: #333333;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
-            user-select: none;
-            -webkit-user-select: none;
-            user-select: none;
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            /* 阻止 iOS 点击产生灰色/蓝色高亮半透明遮罩 */
-            -webkit-tap-highlight-color: transparent; 
-            /* 阻止长按出现默认菜单（保存图片、全屏等） */
-            -webkit-touch-callout: none;
-            /* 阻止浏览器默认的下拉回弹（橡皮筋效果）和手势导航 */
-            overscroll-behavior-y: none;
-            touch-action: pan-y;
-        }
-
-        .app-container { 
-            width: 100%; 
-            max-width: 400px; 
-            height: 100%; 
-            max-height: 850px;
-            position: relative; 
-            display: flex; 
-            flex-direction: column; 
-        }
-
-        /* --- 1. 顶部导航 --- */
-        .top-nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px 20px 10px 20px;
-            z-index: 10;
-        }
-        .icon-btn { 
-            font-size: 22px; 
-            cursor: pointer; 
-            color: #333; 
-            font-weight: bold; 
-            transition: transform 0.2s;
-        }
-        .icon-btn:active { transform: scale(0.8); }
-        .nav-title { font-size: 15px; font-weight: 600; color: #1a1a1a; }
-        
-        .weather-info {
-            text-align: right;
-            font-size: 12px;
-            color: #888888;
-            padding-right: 20px;
-            margin-bottom: 10px;
-        }
-
-        /* --- 2. 头部数字人与欢迎区 --- */
-        .header-section {
-            display: flex;
-            padding: 0 20px;
-            align-items: center;
-            position: relative;
-            z-index: 1;
-        }
-
+        /* 2. 确保 .avatar-container 的遮罩依然保留，让它和圆形白光完美融合 */
         .avatar-container {
-            width: 130px; 
-            height: 190px; 
-            border-radius: 16px;
-            background: #ffffff; 
+            width: 115px; 
+            height: 175px; 
+            background: transparent; 
             position: relative;
-            overflow: hidden;
             flex-shrink: 0;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.06);
-        }
-
-        /* 🌟 核心修改区：让图片和视频完美重叠，并加入透明度过渡动画实现丝滑切换 */
-        /* 🌟 核心修改区：让图片和视频完美重叠，并加入透明度过渡动画实现丝滑切换 */
-        .avatar-container img, .avatar-container video {
-            width: 100%;
-            height: 100%;
-            object-fit: contain; 
-            object-position: center top; 
-            position: absolute;
-            left: 0; 
-            top: 0;
-            background: transparent; /* 💡 修改：将 #ffffff 替换为 transparent */
-            transition: opacity 0.4s ease-in-out; 
-        }
-
-       .greeting-container {
-            flex: 1; /* 让它自适应撑满右侧剩余空间 */
-            margin-left: 15px;
-            background: rgba(255, 255, 255, 0.65);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            padding: 20px 18px; /* 略微增加一点上下内边距，使其更饱满 */
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 1);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-            /* 💡 核心修复：删除了 margin-top: -20px，借助父级的 flex 自动居中 */
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            margin-top: -60px;
-        }
-
-        .greet-title { font-size: 16px; font-weight: bold; color: #333; margin-bottom: 8px;}
-        .highlight-name {
-            background: linear-gradient(90deg, #9b51e0, #4a90e2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .greet-desc { font-size: 12px; color: #666; line-height: 1.5; }
-
-        /* --- 3. 核心交互区 --- */
-       /* --- 核心交互区 (修复文字触顶问题) --- */
-        /* --- 核心交互区 (提升通透度，让底光透出来) --- */
-        .glass-panel {
-            flex: 1;
-            margin: 0 20px;
-            margin-top: -40px; 
-            position: relative;
-            z-index: 10; 
-            /* 💡 核心修改：将白色背景的不透明度从 0.75 降到 0.45 */
-            background: rgba(255, 255, 255, 0.45);
-            /* 加强模糊效果，让透出来的光芒更柔和高级 */
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
-            border-radius: 24px;
-            padding: 20px 20px 0 20px; 
-            /* 添加一点微弱的内发光，增强立体感 */
-            box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.5), 0 -5px 30px rgba(100, 100, 150, 0.08); 
-            border: 1px solid rgba(255, 255, 255, 0.8);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden; 
-        }
-
-        /* 💡 核心修改：让内部容器独立滚动，这样顶部的 20px 留白就会永远存在，文字到了这里就会被裁切 */
-        #recommend-content, #chat-content {
-            flex: 1;
-            overflow-y: auto;
-            -ms-overflow-style: none;  
-            scrollbar-width: none;
-            padding-bottom: 20px; /* 补回底部的留白 */
-        }
-        #recommend-content::-webkit-scrollbar, #chat-content::-webkit-scrollbar { display: none; }
-
-        #chat-content { display: none; flex-direction: column; height: 100%; }
-
-        /* 移除原有的 emoji 图标，后续在 JS 中用 SVG 替代 */
-        .section-title { font-size: 16px; font-weight: bold; margin-bottom: 15px; display: flex; align-items: center; color: #333;}  .rec-item {
-            background: rgba(255, 255, 255, 0.9);
-            padding: 12px 16px;
-            border-radius: 12px;
-            margin-bottom: 10px;
-            font-size: 13px;
-            color: #555;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-            cursor: pointer;
-        }
-
-        #chat-content { display: none; flex-direction: column; height: 100%;}
-        
-        .status-badge {
-            align-self: flex-start;
-            background: rgba(155, 81, 224, 0.1);
-            color: #9b51e0;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            margin-bottom: 15px;
-        }
-
-        /* 💡 进阶排版的 CSS */
-        .ai-response-format { font-size: 14px; line-height: 1.6; color: #444; margin-top: 8px; }
-        .ai-response-format p { margin: 0 0 10px 0; }
-        .ai-response-format ul { list-style: none; padding-left: 0; margin: 0 0 10px 0; }
-        .ai-response-format ul li { position: relative; padding-left: 18px; margin-bottom: 8px; }
-        .ai-response-format ul li::before {
-            content: ""; position: absolute; left: 4px; top: 8px; width: 5px; height: 5px;
-            border-radius: 50%; background-color: #9b51e0; box-shadow: 0 0 4px rgba(155, 81, 224, 0.5);
-        }
-        .ai-response-format ol { padding-left: 20px; margin: 0 0 10px 0; }
-        .ai-response-format ol li { margin-bottom: 8px; }
-        .ai-response-format ol li::marker { color: #9b51e0; font-weight: bold; }
-        .ai-response-format strong { color: #9b51e0; font-weight: 600; background: rgba(155, 81, 224, 0.08); padding: 2px 6px; border-radius: 6px; margin: 0 2px; }
-        .ai-response-format h1, .ai-response-format h2, .ai-response-format h3 {
-            margin: 15px 0 8px 0; color: #222; font-size: 15px; position: relative; padding-left: 10px;
-        }
-        .ai-response-format h1::before, .ai-response-format h2::before, .ai-response-format h3::before {
-            content: ""; position: absolute; left: 0; top: 2px; bottom: 2px; width: 3px; border-radius: 2px; background: linear-gradient(180deg, #9b51e0, #4a90e2);
-        }
-
-        /* --- 4. 底部长按语音控制区 --- */
-        .control-section {
-            padding: 15px 20px 30px 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            height: 160px;
-        }
-
-        .hint-text { font-size: 13px; color: #888888; margin-bottom: 5px; transition: color 0.3s; }
-        /* 这是报错中找不到的 canvas 元素 */
-        #wave-canvas { width: 200px; height: 40px; display: none; margin-bottom: 10px; }
-        .wave-spacer { height: 40px; width: 100%; margin-bottom: 10px; }
-
-        .mic-btn {
-            width: 70px; height: 70px; border-radius: 50%;
-            background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-            border: 2px solid rgba(255, 255, 255, 1); box-shadow: 0 8px 25px rgba(155, 81, 224, 0.2);
-            color: #9b51e0; font-size: 28px; display: flex; justify-content: center; align-items: center;
-            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            -webkit-tap-highlight-color: transparent; touch-action: none; cursor: pointer;
-        }
-       /* 🔵 全局讲话背景呼吸灯特效 (音频随动版) */
-        body {
-            position: relative; 
-        }
-        
-        body::before {
-            content: '';
-            position: fixed; 
-            top: 0; left: 0; right: 0; bottom: 0;
-            /* 💡 核心修改：扩大光晕范围（70% -> 85%），增强基础透明度（0.45 -> 0.65） */
-            background: radial-gradient(circle at center 35%, rgba(74, 144, 226, 0.65) 0%, rgba(74, 144, 226, 0) 85%);
-            opacity: var(--bg-light-opacity, 0); 
-            z-index: -1;
-            pointer-events: none;
-            transition: opacity 0.1s linear; 
-        }
-        /* 🌌 加载页全屏样式 */
-        #loading-screen {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(160deg, #fdfaff 0%, #f0ebff 40%, #e6f0ff 80%, #f3ebff 100%);
-            z-index: 99999;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: opacity 0.8s ease, visibility 0.8s ease; /* 用于平滑消失 */
-        }
-
-        #particle-canvas {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; /* 防止挡住交互 */
             z-index: 1;
+            -webkit-mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
+            mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
         }
+      /* --- 1. 顶部导航 --- */
+      .top-nav {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 20px 10px 20px;
+        z-index: 10;
+      }
+      .icon-btn {
+        font-size: 22px;
+        cursor: pointer;
+        color: #333;
+        font-weight: bold;
+        transition: transform 0.2s;
+      }
+      .icon-btn:active {
+        transform: scale(0.8);
+      }
+      .nav-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1a1a1a;
+      }
 
-        .loading-content {
-            z-index: 2;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
-        }
+      .weather-info {
+        text-align: right;
+        font-size: 12px;
+        color: #888888;
+        padding-right: 20px;
+        margin-bottom: 10px;
+      }
 
-        .loading-text {
-            font-size: 16px;
-            font-weight: 600;
-            background: linear-gradient(90deg, #9b51e0, #4a90e2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: 1px;
-            margin-top: 5px;
-        }
+      /* --- 2. 头部数字人与欢迎区 --- */
+      .header-section {
+        display: flex;
+        padding: 0 20px;
+        align-items: center; /* 保持垂直居中对齐 */
+        position: relative;
+        z-index: 1;
+        margin-bottom: 5px; /* 💡 给下方的面板留出一丝喘息的空间 */
+      }
 
-        /* 精致的进度条底槽与光效填充 */
-        .loading-bar-bg {
-            width: 160px;
-            height: 4px;
-            background: rgba(155, 81, 224, 0.1);
-            border-radius: 4px;
-            overflow: hidden;
-            position: relative;
-        }
+      .avatar-container {
+        width: 115px;
+        height: 175px;
+        /* border-radius: 16px; (💡 删掉圆角，因为我们要让它融进背景) */
+        background: transparent;
+        position: relative;
+        overflow: hidden;
+        flex-shrink: 0;
+        /* box-shadow: 0 8px 20px rgba(0,0,0,0.06); (💡 删掉阴影，否则会像一个脏矩形) */
+        z-index: 1;
+        /* 🌟 注入灵魂：用蒙版让底部和右侧边缘虚化消失，彻底融入背景 */
+        -webkit-mask-image: linear-gradient(
+          to bottom right,
+          black 60%,
+          transparent 95%
+        );
+        mask-image: linear-gradient(
+          to bottom right,
+          black 60%,
+          transparent 95%
+        );
+      }
 
-        .loading-bar-fill {
-            width: 0%;
-            height: 100%;
-            background: linear-gradient(90deg, #4a90e2, #9b51e0);
-            border-radius: 4px;
-            transition: width 0.3s ease-out;
-            box-shadow: 0 0 10px rgba(155, 81, 224, 0.5);
-        }
-        #global-bg-canvas {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -2; /* 放在所有内容的底层，被毛玻璃盖住 */
-            pointer-events: none; /* 绝对不能阻挡用户的点击滑动 */
-        }
-        /* 🎤 用户录音时的底部环境光晕 (随麦克风音量闪烁) */
-        body::after {
-            content: '';
-            position: fixed; 
-            left: 0; right: 0; bottom: 0;
-            height: 45vh; /* 占据底部将近一半的高度，形成柔和的泛光 */
-            background: linear-gradient(to top, rgba(155, 81, 224, 0.45) 0%, rgba(155, 81, 224, 0) 100%);
-            opacity: var(--user-glow-opacity, 0); /* 默认透明，由 JS 注入真实音量控制 */
-            z-index: -1;
-            pointer-events: none;
-            transition: opacity 0.1s linear; 
-        }
-        /* 🔄 换一换按钮样式 */
-        .refresh-btn {
-            display: flex;
-            align-items: center;
-            font-size: 13px;
-            color: #9b51e0;
-            cursor: pointer;
-            font-weight: normal;
-            transition: opacity 0.2s;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .refresh-btn:active {
-            opacity: 0.5;
-        }
-        .refresh-icon {
-            margin-right: 4px;
-            /* 旋转动画缓动函数 */
-            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
+      /* 🌟 核心修改区：让图片和视频完美重叠，并加入透明度过渡动画实现丝滑切换 */
+      /* 🌟 核心修改区：让图片和视频完美重叠，并加入透明度过渡动画实现丝滑切换 */
+      .avatar-container img,
+      .avatar-container video {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        object-position: center top;
+        position: absolute;
+        left: 0;
+        top: 0;
+        background: transparent; /* 💡 修改：将 #ffffff 替换为 transparent */
+        transition: opacity 0.4s ease-in-out;
+      }
+
+      .greeting-container {
+        flex: 1;
+        margin-left: 15px;
+        background: rgba(255, 255, 255, 0.65);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        padding: 12px 14px; /* 💡 略微缩紧内边距，让排版更紧凑不臃肿 */
+        border-radius: 18px; /* 圆角稍微收拢一点 */
+        border: 1px solid rgba(255, 255, 255, 1);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        margin-top: 0; /* 💡 核心修复 1：删掉了极其激进的 -60px，让它顺应自然流排布 */
+      }
+
+      .greet-title {
+        font-size: 16px;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 8px;
+      }
+      .highlight-name {
+        background: linear-gradient(90deg, #9b51e0, #4a90e2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+      .greet-desc {
+        font-size: 12px;
+        color: #666;
+        line-height: 1.5;
+      }
+
+      /* --- 3. 核心交互区 --- */
+      /* --- 核心交互区 (修复文字触顶问题) --- */
+      /* --- 核心交互区 (提升通透度，让底光透出来) --- */
+      .glass-panel {
+        flex: 1;
+        margin: 0 20px;
+        margin-top: -10px; /* 💡 核心修复 2：把原本疯狂上移的 -40px 改成 -10px，既保留了层叠的微拟态立体感，又绝不会遮挡上方文字 */
+        position: relative;
+        z-index: 10;
+        background: rgba(255, 255, 255, 0.45);
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        border-radius: 24px;
+        padding: 20px 20px 0 20px;
+        box-shadow:
+          inset 0 0 10px rgba(255, 255, 255, 0.5),
+          0 -5px 30px rgba(100, 100, 150, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      /* 💡 核心修改：让内部容器独立滚动，这样顶部的 20px 留白就会永远存在，文字到了这里就会被裁切 */
+      #recommend-content,
+      #chat-content {
+        flex: 1;
+        overflow-y: auto;
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+        padding-bottom: 20px; /* 补回底部的留白 */
+      }
+      #recommend-content::-webkit-scrollbar,
+      #chat-content::-webkit-scrollbar {
+        display: none;
+      }
+
+      #chat-content {
+        display: none;
+        flex-direction: column;
+        height: 100%;
+      }
+
+      /* 移除原有的 emoji 图标，后续在 JS 中用 SVG 替代 */
+      .section-title {
+        font-size: 16px;
+        font-weight: bold;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        color: #333;
+      }
+      .rec-item {
+        background: rgba(255, 255, 255, 0.9);
+        padding: 12px 16px;
+        border-radius: 12px;
+        margin-bottom: 10px;
+        font-size: 13px;
+        color: #555;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+        cursor: pointer;
+      }
+
+      #chat-content {
+        display: none;
+        flex-direction: column;
+        height: 100%;
+      }
+
+      .status-badge {
+        align-self: flex-start;
+        background: rgba(155, 81, 224, 0.1);
+        color: #9b51e0;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        margin-bottom: 15px;
+      }
+
+      /* 💡 进阶排版的 CSS */
+      .ai-response-format {
+        font-size: 14px;
+        line-height: 1.6;
+        color: #444;
+        margin-top: 8px;
+      }
+      .ai-response-format p {
+        margin: 0 0 10px 0;
+      }
+      .ai-response-format ul {
+        list-style: none;
+        padding-left: 0;
+        margin: 0 0 10px 0;
+      }
+      .ai-response-format ul li {
+        position: relative;
+        padding-left: 18px;
+        margin-bottom: 8px;
+      }
+      .ai-response-format ul li::before {
+        content: "";
+        position: absolute;
+        left: 4px;
+        top: 8px;
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background-color: #9b51e0;
+        box-shadow: 0 0 4px rgba(155, 81, 224, 0.5);
+      }
+      .ai-response-format ol {
+        padding-left: 20px;
+        margin: 0 0 10px 0;
+      }
+      .ai-response-format ol li {
+        margin-bottom: 8px;
+      }
+      .ai-response-format ol li::marker {
+        color: #9b51e0;
+        font-weight: bold;
+      }
+      .ai-response-format strong {
+        color: #9b51e0;
+        font-weight: 600;
+        background: rgba(155, 81, 224, 0.08);
+        padding: 2px 6px;
+        border-radius: 6px;
+        margin: 0 2px;
+      }
+      .ai-response-format h1,
+      .ai-response-format h2,
+      .ai-response-format h3 {
+        margin: 15px 0 8px 0;
+        color: #222;
+        font-size: 15px;
+        position: relative;
+        padding-left: 10px;
+      }
+      .ai-response-format h1::before,
+      .ai-response-format h2::before,
+      .ai-response-format h3::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 2px;
+        bottom: 2px;
+        width: 3px;
+        border-radius: 2px;
+        background: linear-gradient(180deg, #9b51e0, #4a90e2);
+      }
+
+      /* --- 4. 底部长按语音控制区 --- */
+      .control-section {
+        padding: 15px 20px 30px 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        height: 160px;
+      }
+
+      .hint-text {
+        font-size: 13px;
+        color: #888888;
+        margin-bottom: 5px;
+        transition: color 0.3s;
+      }
+      /* 这是报错中找不到的 canvas 元素 */
+      #wave-canvas {
+        width: 200px;
+        height: 40px;
+        display: none;
+        margin-bottom: 10px;
+      }
+      .wave-spacer {
+        height: 40px;
+        width: 100%;
+        margin-bottom: 10px;
+      }
+
+      .mic-btn {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.6);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 2px solid rgba(255, 255, 255, 1);
+        box-shadow: 0 8px 25px rgba(155, 81, 224, 0.2);
+        color: #9b51e0;
+        font-size: 28px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        -webkit-tap-highlight-color: transparent;
+        touch-action: none;
+        cursor: pointer;
+      }
+      /* 🔵 全局讲话背景呼吸灯特效 (音频随动版) */
+      body {
+        position: relative;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        /* 💡 核心修改：扩大光晕范围（70% -> 85%），增强基础透明度（0.45 -> 0.65） */
+        background: radial-gradient(
+          circle at center 35%,
+          rgba(74, 144, 226, 0.65) 0%,
+          rgba(74, 144, 226, 0) 85%
+        );
+        opacity: var(--bg-light-opacity, 0);
+        z-index: -1;
+        pointer-events: none;
+        transition: opacity 0.1s linear;
+      }
+      /* 🌌 加载页全屏样式 */
+      #loading-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          160deg,
+          #fdfaff 0%,
+          #f0ebff 40%,
+          #e6f0ff 80%,
+          #f3ebff 100%
+        );
+        z-index: 99999;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        transition:
+          opacity 0.8s ease,
+          visibility 0.8s ease; /* 用于平滑消失 */
+      }
+
+      #particle-canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none; /* 防止挡住交互 */
+        z-index: 1;
+      }
+
+      .loading-content {
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+      }
+
+      .loading-text {
+        font-size: 16px;
+        font-weight: 600;
+        background: linear-gradient(90deg, #9b51e0, #4a90e2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        letter-spacing: 1px;
+        margin-top: 5px;
+      }
+
+      /* 精致的进度条底槽与光效填充 */
+      .loading-bar-bg {
+        width: 160px;
+        height: 4px;
+        background: rgba(155, 81, 224, 0.1);
+        border-radius: 4px;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .loading-bar-fill {
+        width: 0%;
+        height: 100%;
+        background: linear-gradient(90deg, #4a90e2, #9b51e0);
+        border-radius: 4px;
+        transition: width 0.3s ease-out;
+        box-shadow: 0 0 10px rgba(155, 81, 224, 0.5);
+      }
+      #global-bg-canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -2; /* 放在所有内容的底层，被毛玻璃盖住 */
+        pointer-events: none; /* 绝对不能阻挡用户的点击滑动 */
+      }
+      /* 🎤 用户录音时的底部环境光晕 (随麦克风音量闪烁) */
+      body::after {
+        content: "";
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 45vh; /* 占据底部将近一半的高度，形成柔和的泛光 */
+        background: linear-gradient(
+          to top,
+          rgba(155, 81, 224, 0.45) 0%,
+          rgba(155, 81, 224, 0) 100%
+        );
+        opacity: var(
+          --user-glow-opacity,
+          0
+        ); /* 默认透明，由 JS 注入真实音量控制 */
+        z-index: -1;
+        pointer-events: none;
+        transition: opacity 0.1s linear;
+      }
+      /* 🔄 换一换按钮样式 */
+      .refresh-btn {
+        display: flex;
+        align-items: center;
+        font-size: 13px;
+        color: #9b51e0;
+        cursor: pointer;
+        font-weight: normal;
+        transition: opacity 0.2s;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .refresh-btn:active {
+        opacity: 0.5;
+      }
+      .refresh-icon {
+        margin-right: 4px;
+        /* 旋转动画缓动函数 */
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-</head>
-<body>
+  </head>
+  <body>
     <canvas id="global-bg-canvas"></canvas>
-<div id="loading-screen">
-        <canvas id="particle-canvas"></canvas>
-        <div class="loading-content">
-            <svg class="ai-sparkle-icon" viewBox="0 0 24 24" width="36" height="36" fill="url(#loading-grad)">
-                <defs>
-                    <linearGradient id="loading-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stop-color="#9b51e0" />
-                        <stop offset="100%" stop-color="#4a90e2" />
-                    </linearGradient>
-                </defs>
-                <path d="M12 2L14.4 9.6L22 12L14.4 14.4L12 22L9.6 14.4L2 12L9.6 9.6L12 2Z"></path>
-            </svg>
-            <div class="loading-text" id="loading-text">正在唤醒小智... 0%</div>
-            <div class="loading-bar-bg">
-                <div class="loading-bar-fill" id="loading-bar"></div>
-            </div>
+    <div id="loading-screen">
+      <canvas id="particle-canvas"></canvas>
+      <div class="loading-content">
+        <svg
+          class="ai-sparkle-icon"
+          viewBox="0 0 24 24"
+          width="36"
+          height="36"
+          fill="url(#loading-grad)"
+        >
+          <defs>
+            <linearGradient
+              id="loading-grad"
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="100%"
+            >
+              <stop offset="0%" stop-color="#9b51e0" />
+              <stop offset="100%" stop-color="#4a90e2" />
+            </linearGradient>
+          </defs>
+          <path
+            d="M12 2L14.4 9.6L22 12L14.4 14.4L12 22L9.6 14.4L2 12L9.6 9.6L12 2Z"
+          ></path>
+        </svg>
+        <div class="loading-text" id="loading-text">正在唤醒小智... 0%</div>
+        <div class="loading-bar-bg">
+          <div class="loading-bar-fill" id="loading-bar"></div>
         </div>
+      </div>
     </div>
-<div class="app-container">
-    <div class="top-nav">
+    <div class="app-container">
+      <div class="top-nav">
         <div class="icon-btn">≡</div>
-        <div class="nav-title">小智</div> 
-        <div class="icon-btn" id="mute-btn" style="display: flex; align-items: center;">
-            <svg id="vol-on-icon" viewBox="0 0 24 24" width="22" height="22" stroke="#333" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-            </svg>
-            <svg id="vol-off-icon" viewBox="0 0 24 24" width="22" height="22" stroke="#333" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
-                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                <line x1="23" y1="1" x2="1" y2="23"></line>
-            </svg>
+        <div class="nav-title">小智</div>
+        <div
+          class="icon-btn"
+          id="mute-btn"
+          style="display: flex; align-items: center"
+        >
+          <svg
+            id="vol-on-icon"
+            viewBox="0 0 24 24"
+            width="22"
+            height="22"
+            stroke="#333"
+            stroke-width="2"
+            fill="none"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path
+              d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"
+            ></path>
+          </svg>
+          <svg
+            id="vol-off-icon"
+            viewBox="0 0 24 24"
+            width="22"
+            height="22"
+            stroke="#333"
+            stroke-width="2"
+            fill="none"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            style="display: none"
+          >
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <line x1="23" y1="1" x2="1" y2="23"></line>
+          </svg>
         </div>
-    </div>
-    <div class="weather-info">定位中...</div>
+      </div>
+      <div class="weather-info">定位中...</div>
 
-    <div class="header-section">
+      <div class="header-section">
         <div class="avatar-container">
-            <img id="static-avatar" src="https://ai-avatar-wwl.oss-cn-beijing.aliyuncs.com/12.jpg" style="opacity: 1; z-index: 1;">
-            <video id="thinking-video" src="https://ai-avatar-wwl.oss-cn-beijing.aliyuncs.com/sikao.mp4" loop muted playsinline webkit-playsinline preload="auto" style="opacity: 0; z-index: 2;"></video>
-            <video id="talking-video" src="https://ai-avatar-wwl.oss-cn-beijing.aliyuncs.com/video.mp4" loop muted playsinline webkit-playsinline preload="auto" style="opacity: 0; z-index: 3;"></video>
+          <img
+            id="static-avatar"
+            src="https://ai-avatar-wwl.oss-cn-beijing.aliyuncs.com/12.jpg"
+            style="opacity: 1; z-index: 1"
+          />
+          <video
+            id="thinking-video"
+            src="https://ai-avatar-wwl.oss-cn-beijing.aliyuncs.com/sikao.mp4"
+            loop
+            muted
+            playsinline
+            webkit-playsinline
+            preload="auto"
+            style="opacity: 0; z-index: 2"
+          ></video>
+          <video
+            id="talking-video"
+            src="https://ai-avatar-wwl.oss-cn-beijing.aliyuncs.com/video.mp4"
+            loop
+            muted
+            playsinline
+            webkit-playsinline
+            preload="auto"
+            style="opacity: 0; z-index: 3"
+          ></video>
         </div>
-        
-        <div class="greeting-container">
-            <div class="greet-title">👋 嗨，我是<span class="highlight-name">小智</span></div>
-            <div class="greet-desc">我是人工智能学院专属助手小智，你的AI学习与生活指南，按住下方即可语音交流!</div>
-        </div>
-    </div>
 
-    <div class="glass-panel" id="main-panel">
+        <div class="greeting-container">
+          <div class="greet-title" id="greet-title">
+            👋 嗨，我是<span class="highlight-name">小智</span>
+          </div>
+          <div class="greet-desc" id="greet-desc">
+            我是人工智能学院专属助手小智，你的AI学习与生活指南，按住下方即可语音交流!
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-panel" id="main-panel">
         <div id="recommend-content"></div>
         <div id="chat-content">
-            <div class="status-badge" id="status">小智已准备好，请随时提问</div>
-            <div class="message-content" id="message">期待与您的对话...</div>
+          <div class="status-badge" id="status">小智已准备好，请随时提问</div>
+          <div class="message-content" id="message">期待与您的对话...</div>
         </div>
-    </div>
+      </div>
 
-    <div class="control-section">
+      <div class="control-section">
         <div class="hint-text" id="hint-text">按住说话，上划取消</div>
         <canvas id="wave-canvas" width="400" height="80"></canvas>
         <div class="wave-spacer" id="wave-spacer"></div>
-        <div class="mic-btn" id="mic-btn">🎙️</div>
+        <div class="mic-btn" id="mic-btn">
+          <svg
+            id="mic-icon-active"
+            viewBox="0 0 24 24"
+            width="26"
+            height="26"
+            stroke="currentColor"
+            stroke-width="2.5"
+            fill="none"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path
+              d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"
+            ></path>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+            <line x1="12" y1="19" x2="12" y2="23"></line>
+            <line x1="8" y1="23" x2="16" y2="23"></line>
+          </svg>
+          <svg
+            id="mic-icon-disabled"
+            style="display: none"
+            viewBox="0 0 24 24"
+            width="26"
+            height="26"
+            stroke="currentColor"
+            stroke-width="2.5"
+            fill="none"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <line x1="1" y1="1" x2="23" y2="23"></line>
+            <path
+              d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V5a3 3 0 0 0-5.94-.88"
+            ></path>
+            <path
+              d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"
+            ></path>
+            <line x1="12" y1="19" x2="12" y2="23"></line>
+            <line x1="8" y1="23" x2="16" y2="23"></line>
+          </svg>
+        </div>
+      </div>
     </div>
-</div>
 
-<script>
+    <script>
+      // ==========================================
+      // 🌌 1. 神经元粒子特效引擎 (AI 科技感)
+      // ==========================================
+      const pCanvas = document.getElementById("particle-canvas");
+      const pCtx = pCanvas.getContext("2d");
+      let pWidth = (pCanvas.width = window.innerWidth);
+      let pHeight = (pCanvas.height = window.innerHeight);
 
-    // ==========================================
-    // 🌌 1. 神经元粒子特效引擎 (AI 科技感)
-    // ==========================================
-    const pCanvas = document.getElementById('particle-canvas');
-    const pCtx = pCanvas.getContext('2d');
-    let pWidth = pCanvas.width = window.innerWidth;
-    let pHeight = pCanvas.height = window.innerHeight;
-    
-    const particles = [];
-    // 生成 60 个随机运动的粒子
-    for (let i = 0; i < 60; i++) {
+      const particles = [];
+      // 生成 60 个随机运动的粒子
+      for (let i = 0; i < 60; i++) {
         particles.push({
-            x: Math.random() * pWidth,
-            y: Math.random() * pHeight,
-            vx: (Math.random() - 0.5) * 1.5,
-            vy: (Math.random() - 0.5) * 1.5,
-            radius: Math.random() * 2 + 1
+          x: Math.random() * pWidth,
+          y: Math.random() * pHeight,
+          vx: (Math.random() - 0.5) * 1.5,
+          vy: (Math.random() - 0.5) * 1.5,
+          radius: Math.random() * 2 + 1,
         });
-    }
+      }
 
-    let particleAnimationId;
-    function drawParticles() {
+      let particleAnimationId;
+      function drawParticles() {
         pCtx.clearRect(0, 0, pWidth, pHeight);
-        
+
         // 绘制粒子并检测距离连线 (模拟神经网络)
         for (let i = 0; i < particles.length; i++) {
-            let p = particles[i];
-            p.x += p.vx; p.y += p.vy;
-            // 边缘反弹
-            if (p.x < 0 || p.x > pWidth) p.vx *= -1;
-            if (p.y < 0 || p.y > pHeight) p.vy *= -1;
+          let p = particles[i];
+          p.x += p.vx;
+          p.y += p.vy;
+          // 边缘反弹
+          if (p.x < 0 || p.x > pWidth) p.vx *= -1;
+          if (p.y < 0 || p.y > pHeight) p.vy *= -1;
 
-            pCtx.beginPath();
-            pCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-            pCtx.fillStyle = 'rgba(155, 81, 224, 0.4)';
-            pCtx.fill();
+          pCtx.beginPath();
+          pCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          pCtx.fillStyle = "rgba(155, 81, 224, 0.4)";
+          pCtx.fill();
 
-            for (let j = i + 1; j < particles.length; j++) {
-                let p2 = particles[j];
-                let dist = Math.hypot(p.x - p2.x, p.y - p2.y);
-                if (dist < 100) {
-                    pCtx.beginPath();
-                    pCtx.moveTo(p.x, p.y);
-                    pCtx.lineTo(p2.x, p2.y);
-                    // 距离越近，线条越清晰
-                    pCtx.strokeStyle = `rgba(74, 144, 226, ${1 - dist / 100})`;
-                    pCtx.lineWidth = 0.5;
-                    pCtx.stroke();
-                }
+          for (let j = i + 1; j < particles.length; j++) {
+            let p2 = particles[j];
+            let dist = Math.hypot(p.x - p2.x, p.y - p2.y);
+            if (dist < 100) {
+              pCtx.beginPath();
+              pCtx.moveTo(p.x, p.y);
+              pCtx.lineTo(p2.x, p2.y);
+              // 距离越近，线条越清晰
+              pCtx.strokeStyle = `rgba(74, 144, 226, ${1 - dist / 100})`;
+              pCtx.lineWidth = 0.5;
+              pCtx.stroke();
             }
+          }
         }
         particleAnimationId = requestAnimationFrame(drawParticles);
-    }
-    
-    // 适配屏幕旋转或尺寸变化
-    window.addEventListener('resize', () => {
+      }
+
+      // 适配屏幕旋转或尺寸变化
+      window.addEventListener("resize", () => {
         pWidth = pCanvas.width = window.innerWidth;
         pHeight = pCanvas.height = window.innerHeight;
-    });
+      });
 
-    drawParticles(); // 启动粒子特效
+      drawParticles(); // 启动粒子特效
 
-    // ==========================================
-    // 🚀 2. 核心媒体资源预加载调度中心 (修复兼容性版)
-    // ==========================================
-    const assetsToLoad = [
-        { id: 'static-avatar', type: 'image' },
-        { id: 'thinking-video', type: 'video' },
-        { id: 'talking-video', type: 'video' }
-    ];
+      // ==========================================
+      // 🚀 2. 核心媒体资源预加载调度中心 (修复兼容性版)
+      // ==========================================
+      const assetsToLoad = [
+        { id: "static-avatar", type: "image" },
+        { id: "thinking-video", type: "video" },
+        { id: "talking-video", type: "video" },
+      ];
 
-    let actualProgress = 0; 
-    let displayProgress = 0; 
-    const loadingText = document.getElementById('loading-text');
-    const loadingBar = document.getElementById('loading-bar');
-    const loadingScreen = document.getElementById('loading-screen');
-    // 修复：改用 class 选择器，防止 HTML 漏加 id 导致报错
-    const appContainer = document.querySelector('.app-container'); 
+      let actualProgress = 0;
+      let displayProgress = 0;
+      const loadingText = document.getElementById("loading-text");
+      const loadingBar = document.getElementById("loading-bar");
+      const loadingScreen = document.getElementById("loading-screen");
+      // 修复：改用 class 选择器，防止 HTML 漏加 id 导致报错
+      const appContainer = document.querySelector(".app-container");
 
-    // 平滑进度条动画
-    function animateProgress() {
+      // 平滑进度条动画
+      function animateProgress() {
         if (displayProgress < actualProgress) {
-            displayProgress += (actualProgress - displayProgress) * 0.15; 
-            if (actualProgress - displayProgress < 0.5) displayProgress = actualProgress;
-            
-            const intProgress = Math.round(displayProgress);
-            loadingText.innerText = `正在唤醒小智... ${intProgress}%`;
-            loadingBar.style.width = `${intProgress}%`;
+          displayProgress += (actualProgress - displayProgress) * 0.15;
+          if (actualProgress - displayProgress < 0.5)
+            displayProgress = actualProgress;
+
+          const intProgress = Math.round(displayProgress);
+          loadingText.innerText = `正在唤醒小智... ${intProgress}%`;
+          loadingBar.style.width = `${intProgress}%`;
         }
 
         if (displayProgress >= 99.5) {
-            // 资源就绪，执行退场动画
-            loadingText.innerText = "系统启动完毕";
-            setTimeout(() => {
-                loadingScreen.style.opacity = '0';
-                loadingScreen.style.visibility = 'hidden';
-                if(appContainer) appContainer.style.opacity = '1'; 
-                cancelAnimationFrame(particleAnimationId); // 停掉粒子以节省性能
-            }, 500);
-            return; 
+          // 资源就绪，执行退场动画
+          loadingText.innerText = "系统启动完毕";
+          setTimeout(() => {
+            loadingScreen.style.opacity = "0";
+            loadingScreen.style.visibility = "hidden";
+            if (appContainer) appContainer.style.opacity = "1";
+            cancelAnimationFrame(particleAnimationId); // 停掉粒子以节省性能
+          }, 500);
+          return;
         }
         requestAnimationFrame(animateProgress);
-    }
-    animateProgress();
+      }
+      animateProgress();
 
-   // ==========================================
-    // 🚀 真正稳定且兼容的预加载逻辑 (防呆兼容版)
-    // ==========================================
-    function preloadAssets() {
+      // ==========================================
+      // 🚀 真正稳定且兼容的预加载逻辑 (防呆兼容版)
+      // ==========================================
+      function preloadAssets() {
         let loadedCount = 0;
 
         // 统一进度推进函数
         const checkReady = () => {
-            loadedCount++;
-            actualProgress = (loadedCount / assetsToLoad.length) * 100;
+          loadedCount++;
+          actualProgress = (loadedCount / assetsToLoad.length) * 100;
         };
 
         // 🚨 兜底机制：最多只等 8 秒，直接强制进入页面
         const fallbackTimeout = setTimeout(() => {
-            if (actualProgress < 100) {
-                console.warn("预加载超时或被拦截，强制开启主界面");
-                actualProgress = 100;
-            }
+          if (actualProgress < 100) {
+            console.warn("预加载超时或被拦截，强制开启主界面");
+            actualProgress = 100;
+          }
         }, 8000);
 
         for (let i = 0; i < assetsToLoad.length; i++) {
-            const asset = assetsToLoad[i];
-            const domElement = document.getElementById(asset.id);
-            
-            // 如果没找到元素，直接跳过记为完成，防止卡死
-            if (!domElement) {
-                checkReady();
-                continue;
-            }
+          const asset = assetsToLoad[i];
+          const domElement = document.getElementById(asset.id);
 
-            // 💡 核心修复：同时兼容 data-src 和 src 两种写法！
-            const sourceUrl = domElement.getAttribute('data-src') || domElement.getAttribute('src');
-            
-            if (!sourceUrl || sourceUrl === 'null') {
-                 checkReady();
-                 continue;
-            }
+          // 如果没找到元素，直接跳过记为完成，防止卡死
+          if (!domElement) {
+            checkReady();
+            continue;
+          }
 
-            // 如果还没把真实 URL 赋给 src，则赋值触发下载
-            if (domElement.getAttribute('src') !== sourceUrl) {
-                domElement.src = sourceUrl; 
-            }
+          // 💡 核心修复：同时兼容 data-src 和 src 两种写法！
+          const sourceUrl =
+            domElement.getAttribute("data-src") ||
+            domElement.getAttribute("src");
 
-            // 监听真实的加载完成事件
-            if (asset.type === 'image') {
-                // 如果图片已经存在于浏览器缓存中，直接判定加载完成
-                if (domElement.complete) {
-                    checkReady();
-                } else {
-                    domElement.onload = checkReady;
-                    domElement.onerror = checkReady; // 即使加载失败，也要推进进度
-                }
-            } else if (asset.type === 'video') {
-                // 如果视频的元数据或首帧已经就绪 (readyState >= 2)，直接判定完成
-                if (domElement.readyState >= 2) {
-                    checkReady();
-                } else {
-                    domElement.load();
-                    domElement.onloadeddata = checkReady; 
-                    domElement.onerror = checkReady;
-                }
+          if (!sourceUrl || sourceUrl === "null") {
+            checkReady();
+            continue;
+          }
+
+          // 如果还没把真实 URL 赋给 src，则赋值触发下载
+          if (domElement.getAttribute("src") !== sourceUrl) {
+            domElement.src = sourceUrl;
+          }
+
+          // 监听真实的加载完成事件
+          if (asset.type === "image") {
+            // 如果图片已经存在于浏览器缓存中，直接判定加载完成
+            if (domElement.complete) {
+              checkReady();
+            } else {
+              domElement.onload = checkReady;
+              domElement.onerror = checkReady; // 即使加载失败，也要推进进度
             }
+          } else if (asset.type === "video") {
+            // 如果视频的元数据或首帧已经就绪 (readyState >= 2)，直接判定完成
+            if (domElement.readyState >= 2) {
+              checkReady();
+            } else {
+              domElement.load();
+              domElement.onloadeddata = checkReady;
+              domElement.onerror = checkReady;
+            }
+          }
         }
-    }
-    // 页面结构一旦解析完毕，立刻启动预下载
-    document.addEventListener("DOMContentLoaded", preloadAssets);
-    const QUESTIONS_POOL = [
-        "咱们学院有哪些专业？", "怎么查询课表和考试安排？", "学院领导和任课老师有哪些？", "实训室使用有什么规定？", "近期有哪些技能竞赛可以报名？", "奖助学金申请流程是什么？",
-        "人工智能技术应用专业核心课程有哪些？", "Python、机器学习该怎么入门学习？", "本专业可以使用哪些免费 AI 工具？", "数字媒体技术专业就业方向有哪些？", "课程设计 / 毕业设计有哪些参考方向？", "专业教材和学习资料在哪里领取？",
-        "学院各教研室负责人是谁？", "如何联系专业任课老师？", "转专业的条件和办理流程是什么？", "请假、补办证件怎么办理？", "成绩查询与复核流程是什么？", "日常教学管理有哪些规章制度？",
-        "学院有哪些专业实训室和实训基地？", "巴南实训基地相关管理规定是什么？", "本院常参加哪些职业技能大赛？", "竞赛报名时间和备赛要求有哪些？", "实训室使用规范与安全守则？", "校企合作企业有哪些，实训安排如何？",
-        "计算机机房用电安全注意事项？", "如何防范网络诈骗、信息泄露？", "实验室应急处置方法有哪些？", "校园消防安全须知？", "数据安全使用有哪些规范？",
-        "本专业实习岗位和要求是什么？", "合作企业招聘信息在哪里查看？", "简历制作和面试有哪些技巧？", "专科升学相关政策与渠道？"
-    ];
-    // ==========================================
-    // 📳 4. 交互音效与震动反馈引擎 (移动端破冰兼容版)
-    // ==========================================
-    // 🚨 注意：请务必将下面的 .mp3 替换为你真实可访问的音效链接！
-    const pressSound = new Audio('https://ai-avatar-wwl.oss-cn-beijing.aliyuncs.com/dianji.mp3'); 
-    const releaseSound = new Audio('https://ai-avatar-wwl.oss-cn-beijing.aliyuncs.com/fasong.mp3'); 
-    const cancelSound = new Audio('https://ai-avatar-wwl.oss-cn-beijing.aliyuncs.com/quxiao1.mp3'); 
+      }
+      // 页面结构一旦解析完毕，立刻启动预下载
+      document.addEventListener("DOMContentLoaded", preloadAssets);
+      const QUESTIONS_POOL = [
+        "咱们学院有哪些专业？",
+        "怎么查询课表和考试安排？",
+        "学院领导和任课老师有哪些？",
+        "实训室使用有什么规定？",
+        "近期有哪些技能竞赛可以报名？",
+        "奖助学金申请流程是什么？",
+        "人工智能技术应用专业核心课程有哪些？",
+        "Python、机器学习该怎么入门学习？",
+        "本专业可以使用哪些免费 AI 工具？",
+        "数字媒体技术专业就业方向有哪些？",
+        "课程设计 / 毕业设计有哪些参考方向？",
+        "专业教材和学习资料在哪里领取？",
+        "学院各教研室负责人是谁？",
+        "如何联系专业任课老师？",
+        "转专业的条件和办理流程是什么？",
+        "请假、补办证件怎么办理？",
+        "成绩查询与复核流程是什么？",
+        "日常教学管理有哪些规章制度？",
+        "学院有哪些专业实训室和实训基地？",
+        "巴南实训基地相关管理规定是什么？",
+        "本院常参加哪些职业技能大赛？",
+        "竞赛报名时间和备赛要求有哪些？",
+        "实训室使用规范与安全守则？",
+        "校企合作企业有哪些，实训安排如何？",
+        "计算机机房用电安全注意事项？",
+        "如何防范网络诈骗、信息泄露？",
+        "实验室应急处置方法有哪些？",
+        "校园消防安全须知？",
+        "数据安全使用有哪些规范？",
+        "本专业实习岗位和要求是什么？",
+        "合作企业招聘信息在哪里查看？",
+        "简历制作和面试有哪些技巧？",
+        "专科升学相关政策与渠道？",
+      ];
+      // ==========================================
+      // 📳 4. 交互音效与震动反馈引擎 (移动端破冰兼容版)
+      // ==========================================
+      // 🚨 注意：请务必将下面的 .mp3 替换为你真实可访问的音效链接！
+      const pressSound = new Audio(
+        "https://ai-avatar-wwl.oss-cn-beijing.aliyuncs.com/dianji.mp3",
+      );
+      const releaseSound = new Audio(
+        "https://ai-avatar-wwl.oss-cn-beijing.aliyuncs.com/fasong.mp3",
+      );
+      const cancelSound = new Audio(
+        "https://ai-avatar-wwl.oss-cn-beijing.aliyuncs.com/quxiao1.mp3",
+      );
 
-    pressSound.preload = 'auto';
-    releaseSound.preload = 'auto';
-    cancelSound.preload = 'auto';
+      pressSound.preload = "auto";
+      releaseSound.preload = "auto";
+      cancelSound.preload = "auto";
 
-    // 🚀 核心修复：移动端音频“破冰”解锁机制
-    // 在用户第一次触摸屏幕时，立刻无声地播放并暂停所有音效，获取浏览器的播放通行证
-    document.body.addEventListener('touchstart', function() {
-        [pressSound, releaseSound, cancelSound].forEach(audio => {
-            if (audio.paused && !audio.unlocked) {
-                audio.muted = true; // 先静音，防止吓到用户
-                audio.play().then(() => {
-                    audio.pause();
-                    audio.currentTime = 0;
-                    audio.muted = false; // 获取到通行证后，恢复声音
-                    audio.unlocked = true; // 标记为已解锁
-                }).catch(() => {
-                    console.warn("音频破冰被拦截，检查链接是否有效");
-                });
+      // 🚀 核心修复：移动端音频“破冰”解锁机制
+      // 在用户第一次触摸屏幕时，立刻无声地播放并暂停所有音效，获取浏览器的播放通行证
+      // 🛠️ 新增：安全的音频播放包裹函数 (防止连续点击报错)
+      function safePlay(audioObj) {
+        if (!audioObj) return;
+        try {
+          audioObj.currentTime = 0;
+          const playPromise = audioObj.play();
+          if (playPromise !== undefined) {
+            playPromise.catch((e) => console.warn("音频播放可能被拦截:", e));
+          }
+        } catch (e) {
+          console.warn("音频重置失败:", e);
+        }
+      }
+
+      // 🚀 核心修复：移动端音频“破冰”解锁机制 (音量置零法)
+      const unlockAudio = function () {
+        [pressSound, releaseSound, cancelSound].forEach((audio) => {
+          if (!audio.unlocked) {
+            audio.volume = 0; // 💡 关键修复：用音量0替代 muted=true，强制 iOS 激活音频会话
+            const p = audio.play();
+            if (p !== undefined) {
+              p.then(() => {
+                audio.pause();
+                audio.currentTime = 0;
+                audio.volume = 1; // 获取到通行证后，恢复音量
+                audio.unlocked = true; // 标记为已解锁
+              }).catch(() => {
+                console.warn("音频破冰被拦截");
+              });
             }
+          }
         });
-    }, { once: true, passive: true }); // once: true 保证这个破解逻辑只执行一次
+        // 触发一次后注销事件
+        document.body.removeEventListener("touchstart", unlockAudio);
+        document.body.removeEventListener("click", unlockAudio);
+      };
 
-    // 封装震动函数 (兼容安卓，静默忽略 iOS)
-    function triggerVibration(duration) {
+      // 同时监听 touch 和 click，确保能完美捕捉用户的第一次交互
+      document.body.addEventListener("touchstart", unlockAudio, {
+        once: true,
+        passive: true,
+      });
+      document.body.addEventListener("click", unlockAudio, {
+        once: true,
+        passive: true,
+      });
+
+      // 封装震动函数 (兼容安卓，静默忽略 iOS)
+      function triggerVibration(duration) {
         if (navigator.vibrate) {
-            navigator.vibrate(duration); 
+          navigator.vibrate(duration);
         }
-    }
+      }
 
+      // 🌟 获取图层元素 (适配最新的 HTML 结构)
+      const staticAvatar = document.getElementById("static-avatar");
+      const thinkingVideo = document.getElementById("thinking-video");
+      const talkingVideo = document.getElementById("talking-video");
 
-    // 🌟 获取图层元素 (适配最新的 HTML 结构)
-    const staticAvatar = document.getElementById('static-avatar');
-    const thinkingVideo = document.getElementById('thinking-video');
-    const talkingVideo = document.getElementById('talking-video');
+      const micBtn = document.getElementById("mic-btn");
+      const muteBtn = document.getElementById("mute-btn");
+      const statusEl = document.getElementById("status");
+      const messageEl = document.getElementById("message");
+      const hintText = document.getElementById("hint-text");
 
-    const micBtn = document.getElementById('mic-btn');
-    const muteBtn = document.getElementById('mute-btn'); 
-    const statusEl = document.getElementById('status');
-    const messageEl = document.getElementById('message');
-    const hintText = document.getElementById('hint-text');
-    
-    const recommendContent = document.getElementById('recommend-content');
-    const chatContent = document.getElementById('chat-content');
+      const recommendContent = document.getElementById("recommend-content");
+      const chatContent = document.getElementById("chat-content");
 
-    const waveCanvas = document.getElementById('wave-canvas');
-    const waveSpacer = document.getElementById('wave-spacer');
-    const canvasCtx = waveCanvas.getContext('2d'); // 这里就不会报错了
+      const waveCanvas = document.getElementById("wave-canvas");
+      const waveSpacer = document.getElementById("wave-spacer");
+      const canvasCtx = waveCanvas.getContext("2d"); // 这里就不会报错了
 
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'zh-CN'; 
-    recognition.continuous = false; 
+      const SpeechRecognition =
+        window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      recognition.lang = "zh-CN";
+      recognition.continuous = false;
 
-    let isRecording = false;
-    let isAITalking = false; 
-    let isAIThinking = false; 
-    let isHolding = false;
-    let isCanceling = false;
-    let startY = 0;
-    const CANCEL_THRESHOLD = 50; 
+      let isRecording = false;
+      let isAITalking = false;
+      let isAIThinking = false;
+      let isHolding = false;
+      let isCanceling = false;
+      let startY = 0;
+      const CANCEL_THRESHOLD = 50;
 
-    // ==========================================
-    // 🤖 丝滑状态切换引擎 (修复手机端硬件解码白屏)
-    // ==========================================
-    function switchAvatarState(state) {
-        if (state === 'idle') {
-            document.body.classList.remove('talking-mode'); 
-            staticAvatar.style.opacity = '1';
-            
-            // 延迟淡出视频，确保静态图片已显现
-            setTimeout(() => {
-                thinkingVideo.style.opacity = '0';
-                talkingVideo.style.opacity = '0';
-            }, 50);
-            
-            setTimeout(() => { thinkingVideo.pause(); talkingVideo.pause(); }, 400);
-            
-        } else if (state === 'thinking') {
-            document.body.classList.remove('talking-mode'); 
-            thinkingVideo.currentTime = 0; // 重置进度
-            thinkingVideo.play().catch(()=>{});
-            thinkingVideo.style.opacity = '1';
-            
-            // 延迟淡出其它图层
-            setTimeout(() => {
-                staticAvatar.style.opacity = '0';
-                talkingVideo.style.opacity = '0';
-            }, 50);
-            
-            setTimeout(() => { talkingVideo.pause(); }, 400);
-            
-        } else if (state === 'talking') {
-            document.body.classList.add('talking-mode'); 
-            
-            talkingVideo.currentTime = 0; 
-            talkingVideo.play().catch(()=>{});
-            talkingVideo.style.opacity = '1';
-            
-            // 💡 核心修复：延迟 100ms 隐藏思考视频，给手机芯片解码第一帧的时间，彻底杜绝白屏闪烁！
-            setTimeout(() => {
-                staticAvatar.style.opacity = '0';
-                thinkingVideo.style.opacity = '0';
-            }, 100); 
-            
-            setTimeout(() => { thinkingVideo.pause(); }, 400);
+      // ==========================================
+      // 🤖 丝滑状态切换引擎 (修复手机端硬件解码白屏)
+      // ==========================================
+      function switchAvatarState(state) {
+        if (state === "idle") {
+          document.body.classList.remove("talking-mode");
+          staticAvatar.style.opacity = "1";
+
+          // 延迟淡出视频，确保静态图片已显现
+          setTimeout(() => {
+            thinkingVideo.style.opacity = "0";
+            talkingVideo.style.opacity = "0";
+          }, 50);
+
+          setTimeout(() => {
+            thinkingVideo.pause();
+            talkingVideo.pause();
+          }, 400);
+        } else if (state === "thinking") {
+          document.body.classList.remove("talking-mode");
+          thinkingVideo.currentTime = 0; // 重置进度
+          thinkingVideo.play().catch(() => {});
+          thinkingVideo.style.opacity = "1";
+
+          // 延迟淡出其它图层
+          setTimeout(() => {
+            staticAvatar.style.opacity = "0";
+            talkingVideo.style.opacity = "0";
+          }, 50);
+
+          setTimeout(() => {
+            talkingVideo.pause();
+          }, 400);
+        } else if (state === "talking") {
+          document.body.classList.add("talking-mode");
+
+          talkingVideo.currentTime = 0;
+          talkingVideo.play().catch(() => {});
+          talkingVideo.style.opacity = "1";
+
+          // 💡 核心修复：延迟 100ms 隐藏思考视频，给手机芯片解码第一帧的时间，彻底杜绝白屏闪烁！
+          setTimeout(() => {
+            staticAvatar.style.opacity = "0";
+            thinkingVideo.style.opacity = "0";
+          }, 100);
+
+          setTimeout(() => {
+            thinkingVideo.pause();
+          }, 400);
         }
-    }
+      }
 
-   // ==========================================
-    // 💡 推荐问题区域渲染 (新增换一换功能)
-    // ==========================================
-    
-    // 1. 初始化框架（渲染标题和按钮，容器留空）
-    function initRecommendSection() {
+      // ==========================================
+      // 💡 推荐问题区域渲染 (新增换一换功能)
+      // ==========================================
+
+      // 1. 初始化框架（渲染标题和按钮，容器留空）
+      function initRecommendSection() {
         recommendContent.innerHTML = `
             <div class="section-title" style="justify-content: space-between;">
                 <div style="display: flex; align-items: center;">
@@ -771,56 +1153,59 @@
             <div id="rec-list-container" style="transition: opacity 0.3s ease;"></div>
         `;
         renderRandomQuestions(); // 首次渲染列表
-    }
+      }
 
-    // 2. 仅渲染下方列表（带淡入淡出动画）
-    function renderRandomQuestions() {
-        const container = document.getElementById('rec-list-container');
+      // 2. 仅渲染下方列表（带淡入淡出动画）
+      function renderRandomQuestions() {
+        const container = document.getElementById("rec-list-container");
         if (!container) return;
-        
+
         // 随机抽取 4 个问题
         const shuffled = [...QUESTIONS_POOL].sort(() => 0.5 - Math.random());
         const selectedQuestions = shuffled.slice(0, 4);
-        
-        let htmlContent = '';
-        selectedQuestions.forEach(q => {
-            htmlContent += `<div class="rec-item" onclick="handleRecommendClick('${q}')">${q} <span>›</span></div>`;
-        });
-        
-        // 先变透明，等 150ms 注入新内容后再淡入
-        container.style.opacity = '0';
-        setTimeout(() => {
-            container.innerHTML = htmlContent;
-            container.style.opacity = '1';
-        }, 150);
-    }
 
-    // 3. 点击“换一换”触发的事件
-    let refreshRotate = 0; // 记录当前旋转角度
-    function refreshQuestions(e) {
-        if(e) e.stopPropagation();
-        
+        let htmlContent = "";
+        selectedQuestions.forEach((q) => {
+          htmlContent += `<div class="rec-item" onclick="handleRecommendClick('${q}')">${q} <span>›</span></div>`;
+        });
+
+        // 先变透明，等 150ms 注入新内容后再淡入
+        container.style.opacity = "0";
+        setTimeout(() => {
+          container.innerHTML = htmlContent;
+          container.style.opacity = "1";
+        }, 150);
+      }
+
+      // 3. 点击“换一换”触发的事件
+      let refreshRotate = 0; // 记录当前旋转角度
+      function refreshQuestions(e) {
+        if (e) e.stopPropagation();
+
         // 执行刷新图标的顺时针旋转动画
-        const icon = document.getElementById('refresh-svg');
+        const icon = document.getElementById("refresh-svg");
         if (icon) {
-            refreshRotate += 360;
-            icon.style.transform = `rotate(${refreshRotate}deg)`;
+          refreshRotate += 360;
+          icon.style.transform = `rotate(${refreshRotate}deg)`;
         }
-        
+
         // 重新抽取并渲染内容
         renderRandomQuestions();
-    }
+      }
 
-    // 启动初始渲染
-    initRecommendSection();
+      // 启动初始渲染
+      initRecommendSection();
 
-    // === 点击推荐问题逻辑 (彻底修复思考视频不出的问题) ===
-    function handleRecommendClick(question) {
-        if (isAITalking || isAIThinking) return; 
+      // === 点击推荐问题逻辑 (彻底修复思考视频不出的问题) ===
+      function handleRecommendClick(question) {
+        if (isAITalking || isAIThinking) return;
 
         // 🚀 核心修复：只解锁“说话视频”，去掉“思考视频”的解锁 hack
         // 因为下面马上就会直接调用 play() 播放思考视频，如果加了 hack，反而会被异步的 pause() 误伤强制暂停
-        talkingVideo.play().then(() => talkingVideo.pause()).catch(() => {});
+        talkingVideo
+          .play()
+          .then(() => talkingVideo.pause())
+          .catch(() => {});
 
         switchToChat();
         messageEl.innerHTML = `
@@ -839,301 +1224,405 @@
             </div>
         `;
         statusEl.innerText = "正在为您检索信息";
-        
+
         isAIThinking = true;
         disableMicUI("小智正在思考，请稍候...");
-        stopVisualizer(); 
-        
+        stopVisualizer();
+
         // 直接进入思考状态，此时浏览器由于检测到是用户的 Click 点击事件，会直接放行 play()
-        switchAvatarState('thinking'); 
+        switchAvatarState("thinking");
         callDeepSeek(question);
-    }
-    // ==========================================
-    // 🔊 声音控制模块
-    // ==========================================
-    // ==========================================
-    // 🔊 声音控制模块 (支持 SVG 切换)
-    // ==========================================
-    let isGlobalMuted = false;
-    let activeAudioPlayer = null; 
+      }
+      // ==========================================
+      // 🔊 声音控制模块
+      // ==========================================
+      // ==========================================
+      // 🔊 声音控制模块 (支持 SVG 切换)
+      // ==========================================
+      let isGlobalMuted = false;
+      let activeAudioPlayer = null;
 
-    muteBtn.addEventListener('click', () => {
+      muteBtn.addEventListener("click", () => {
         isGlobalMuted = !isGlobalMuted;
-        
-        // 切换 SVG 图标的显示状态
-        document.getElementById('vol-on-icon').style.display = isGlobalMuted ? 'none' : 'block';
-        document.getElementById('vol-off-icon').style.display = isGlobalMuted ? 'block' : 'none';
-        
-        if (activeAudioPlayer) activeAudioPlayer.muted = isGlobalMuted;
-    });
 
-    function disableMicUI(reasonText) {
-        micBtn.style.opacity = '0.5';
+        // 切换 SVG 图标的显示状态
+        document.getElementById("vol-on-icon").style.display = isGlobalMuted
+          ? "none"
+          : "block";
+        document.getElementById("vol-off-icon").style.display = isGlobalMuted
+          ? "block"
+          : "none";
+
+        if (activeAudioPlayer) activeAudioPlayer.muted = isGlobalMuted;
+      });
+
+      function disableMicUI(reasonText) {
+        micBtn.style.opacity = "0.5";
+        // 隐藏正常图标，显示禁用图标
+        document.getElementById("mic-icon-active").style.display = "none";
+        document.getElementById("mic-icon-disabled").style.display = "block";
+
         hintText.innerText = reasonText;
         hintText.style.color = "#888";
-    }
+      }
 
-    function enableMicUI() {
+      function enableMicUI() {
         isAITalking = false;
         isAIThinking = false;
-        micBtn.style.opacity = '1';
+        micBtn.style.opacity = "1";
+        // 恢复正常图标，隐藏禁用图标
+        document.getElementById("mic-icon-active").style.display = "block";
+        document.getElementById("mic-icon-disabled").style.display = "none";
+
         if (!isRecording && !isHolding) {
-            hintText.innerText = "按住说话，上划取消";
-            hintText.style.color = "#888";
+          hintText.innerText = "按住说话，上划取消";
+          hintText.style.color = "#888";
         }
-    }
+      }
 
-    function switchToChat() {
-        recommendContent.style.display = 'none';
-        chatContent.style.display = 'flex';
-    }
+      function switchToChat() {
+        recommendContent.style.display = "none";
+        chatContent.style.display = "flex";
+      }
 
-    // --- 语音识别事件 ---
-    recognition.onerror = () => {
-        if (isCanceling) return; 
-        isRecording = false; stopVisualizer(); enableMicUI();
+      // --- 语音识别事件 ---
+      recognition.onerror = () => {
+        if (isCanceling) return;
+        isRecording = false;
+        stopVisualizer();
+        enableMicUI();
         hintText.innerText = "未听清，请重新按住说话";
         setTimeout(() => enableMicUI(), 2000);
-    };
+      };
 
-    recognition.onend = () => {
+      recognition.onend = () => {
         if (isRecording && !isCanceling && !isAIThinking) {
-            isRecording = false; stopVisualizer();
-            hintText.innerText = "未识别到声音，请重试";
-            setTimeout(() => enableMicUI(), 2000);
+          isRecording = false;
+          stopVisualizer();
+          hintText.innerText = "未识别到声音，请重试";
+          setTimeout(() => enableMicUI(), 2000);
         }
-    };
+      };
 
-    recognition.onresult = (event) => {
-        if (isCanceling) return; 
+      recognition.onresult = (event) => {
+        if (isCanceling) return;
         const userText = event.results[0][0].transcript;
         messageEl.innerHTML = `<strong>你：</strong>${userText}`;
         statusEl.innerText = "正在云端思考...";
-        
+
         isRecording = false;
         isAIThinking = true;
         disableMicUI("小智正在思考，请稍候...");
-        stopVisualizer(); 
-        
-        switchAvatarState('thinking'); // 切为思考状态
-        callDeepSeek(userText);
-    };
+        stopVisualizer();
 
-    // --- 触控事件 ---
-    // --- 触控事件 (加入震动与音效) ---
-    const handleInputStart = (e) => {
+        switchAvatarState("thinking"); // 切为思考状态
+        callDeepSeek(userText);
+      };
+
+      // --- 触控事件 ---
+      // --- 触控事件 (加入震动与音效) ---
+      const handleInputStart = (e) => {
         if (isAITalking || isAIThinking) {
-            hintText.innerText = isAITalking ? "小智正在讲话..." : "小智正在思考...";
-            return;
+          hintText.innerText = isAITalking
+            ? "小智正在讲话..."
+            : "小智正在思考...";
+          return;
         }
-        e.preventDefault(); 
-        
+        e.preventDefault();
+
         // 📳 触发短促有力的震动 (20毫秒，仅安卓生效)
         triggerVibration(20);
-        
+
         // 🎵 播放按下音效 (每次播放前将进度归零，支持快速连续点击)
-        pressSound.currentTime = 0;
-        pressSound.play().catch(()=>{});
+        safePlay(pressSound);
 
         // 🚀 iOS/Safari 黑科技：用户触摸瞬间解锁两个视频的自动播放限制
-        thinkingVideo.play().then(() => thinkingVideo.pause()).catch(() => {});
-        talkingVideo.play().then(() => talkingVideo.pause()).catch(() => {});
+        thinkingVideo
+          .play()
+          .then(() => thinkingVideo.pause())
+          .catch(() => {});
+        talkingVideo
+          .play()
+          .then(() => talkingVideo.pause())
+          .catch(() => {});
 
         isHolding = true;
         isCanceling = false;
-        startY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
-        
-        micBtn.style.transform = 'scale(1.15)';
-        micBtn.style.boxShadow = '0 8px 30px rgba(155, 81, 224, 0.4)';
+        startY = e.type.includes("touch") ? e.touches[0].clientY : e.clientY;
+
+        micBtn.style.transform = "scale(1.15)";
+        micBtn.style.boxShadow = "0 8px 30px rgba(155, 81, 224, 0.4)";
         hintText.innerText = "松开发送，上划取消";
         hintText.style.color = "#9b51e0";
-        
-        if (!isRecording) {
-            try { recognition.start(); } catch(err) {}
-            statusEl.innerText = "正在倾听您的声音...";
-            isRecording = true;
-            switchToChat();
-            startVisualizer(); 
-        }
-    };
 
-    const handleInputMove = (e) => {
+        if (!isRecording) {
+          try {
+            recognition.start();
+          } catch (err) {}
+          statusEl.innerText = "正在倾听您的声音...";
+          isRecording = true;
+          switchToChat();
+          startVisualizer();
+        }
+      };
+
+      const handleInputMove = (e) => {
         if (!isHolding) return;
         e.preventDefault();
-        let currentY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
-        
-        if (startY - currentY > CANCEL_THRESHOLD) {
-            isCanceling = true;
-            hintText.innerText = "松开手指，取消发送";
-            hintText.style.color = "#ff4d4f"; 
-            micBtn.style.transform = 'scale(0.9)';
-            micBtn.style.background = "rgba(255, 77, 79, 0.1)";
-            micBtn.style.borderColor = "#ff4d4f";
-            micBtn.style.boxShadow = '0 8px 25px rgba(255, 77, 79, 0.3)';
-        } else {
-            isCanceling = false;
-            hintText.innerText = "松开发送，上划取消";
-            hintText.style.color = "#9b51e0";
-            micBtn.style.transform = 'scale(1.15)';
-            micBtn.style.background = "rgba(255, 255, 255, 0.6)";
-            micBtn.style.borderColor = "rgba(255, 255, 255, 1)";
-            micBtn.style.boxShadow = '0 8px 30px rgba(155, 81, 224, 0.4)';
-        }
-    };
+        let currentY = e.type.includes("touch")
+          ? e.touches[0].clientY
+          : e.clientY;
 
-   const handleInputEnd = (e) => {
+        if (startY - currentY > CANCEL_THRESHOLD) {
+          isCanceling = true;
+          hintText.innerText = "松开手指，取消发送";
+          hintText.style.color = "#ff4d4f";
+          micBtn.style.transform = "scale(0.9)";
+          micBtn.style.background = "rgba(255, 77, 79, 0.1)";
+          micBtn.style.borderColor = "#ff4d4f";
+          micBtn.style.boxShadow = "0 8px 25px rgba(255, 77, 79, 0.3)";
+        } else {
+          isCanceling = false;
+          hintText.innerText = "松开发送，上划取消";
+          hintText.style.color = "#9b51e0";
+          micBtn.style.transform = "scale(1.15)";
+          micBtn.style.background = "rgba(255, 255, 255, 0.6)";
+          micBtn.style.borderColor = "rgba(255, 255, 255, 1)";
+          micBtn.style.boxShadow = "0 8px 30px rgba(155, 81, 224, 0.4)";
+        }
+      };
+
+      const handleInputEnd = (e) => {
         if (!isHolding) return;
         isHolding = false;
-        
+
         // 📳 触发轻微的回弹震动 (10毫秒，区别于按下的力度)
         triggerVibration(10);
-        
-        micBtn.style.transform = 'scale(1)';
+
+        micBtn.style.transform = "scale(1)";
         micBtn.style.background = "rgba(255, 255, 255, 0.6)";
         micBtn.style.borderColor = "rgba(255, 255, 255, 1)";
-        micBtn.style.boxShadow = '0 8px 25px rgba(155, 81, 224, 0.2)';
+        micBtn.style.boxShadow = "0 8px 25px rgba(155, 81, 224, 0.2)";
         hintText.style.color = "#888888";
-        
+
         if (isCanceling) {
-            // 🎵 播放取消音效 (上划作废)
-            cancelSound.currentTime = 0;
-            cancelSound.play().catch(()=>{});
-            
-            hintText.innerText = "已取消发送";
-            recognition.abort(); 
-            isRecording = false; stopVisualizer();
-            setTimeout(() => enableMicUI(), 1000); 
+          // 🎵 播放取消音效 (上划作废)
+          safePlay(cancelSound);
+
+          hintText.innerText = "已取消发送";
+          recognition.abort();
+          isRecording = false;
+          stopVisualizer();
+          setTimeout(() => enableMicUI(), 1000);
         } else {
-            // 🎵 播放正常的抬起/发送音效
-            releaseSound.currentTime = 0;
-            releaseSound.play().catch(()=>{});
-            
-            hintText.innerText = "正在处理语音...";
-            recognition.stop(); 
+          // 🎵 播放正常的抬起/发送音效
+          safePlay(releaseSound);
+
+          hintText.innerText = "正在处理语音...";
+          recognition.stop();
         }
-    };
+      };
 
-    micBtn.addEventListener('touchstart', handleInputStart, { passive: false });
-    window.addEventListener('touchmove', handleInputMove, { passive: false });
-    window.addEventListener('touchend', handleInputEnd);
-    micBtn.addEventListener('mousedown', handleInputStart);
-    window.addEventListener('mousemove', handleInputMove);
-    window.addEventListener('mouseup', handleInputEnd);
+      micBtn.addEventListener("touchstart", handleInputStart, {
+        passive: false,
+      });
+      window.addEventListener("touchmove", handleInputMove, { passive: false });
+      window.addEventListener("touchend", handleInputEnd);
+      micBtn.addEventListener("mousedown", handleInputStart);
+      window.addEventListener("mousemove", handleInputMove);
+      window.addEventListener("mouseup", handleInputEnd);
 
-    // ==========================================
-    // 🌊 波浪动画配置
-    // ==========================================
-    let audioContext, analyser, microphone, drawVisual;
-    let currentAmplitude = 0; let phase = 0; 
-    const userWaves = [ { color: 'rgba(186, 85, 211, 0.8)', speed: 1.0, height: 1.0, lineWidth: 3 }, { color: 'rgba(216, 112, 214, 0.5)', speed: 1.3, height: 0.7, lineWidth: 2 }, { color: 'rgba(238, 130, 238, 0.4)', speed: 0.8, height: 0.5, lineWidth: 2 } ];
-    const aiWaves = [ { color: 'rgba(74, 144, 226, 0.8)', speed: 1.0, height: 1.0, lineWidth: 3 }, { color: 'rgba(100, 181, 246, 0.5)', speed: 1.3, height: 0.7, lineWidth: 2 }, { color: 'rgba(144, 202, 249, 0.4)', speed: 0.8, height: 0.5, lineWidth: 2 } ];
+      // ==========================================
+      // 🌊 波浪动画配置
+      // ==========================================
+      let audioContext, analyser, microphone, drawVisual;
+      let currentAmplitude = 0;
+      let phase = 0;
+      const userWaves = [
+        {
+          color: "rgba(186, 85, 211, 0.8)",
+          speed: 1.0,
+          height: 1.0,
+          lineWidth: 3,
+        },
+        {
+          color: "rgba(216, 112, 214, 0.5)",
+          speed: 1.3,
+          height: 0.7,
+          lineWidth: 2,
+        },
+        {
+          color: "rgba(238, 130, 238, 0.4)",
+          speed: 0.8,
+          height: 0.5,
+          lineWidth: 2,
+        },
+      ];
+      const aiWaves = [
+        {
+          color: "rgba(74, 144, 226, 0.8)",
+          speed: 1.0,
+          height: 1.0,
+          lineWidth: 3,
+        },
+        {
+          color: "rgba(100, 181, 246, 0.5)",
+          speed: 1.3,
+          height: 0.7,
+          lineWidth: 2,
+        },
+        {
+          color: "rgba(144, 202, 249, 0.4)",
+          speed: 0.8,
+          height: 0.5,
+          lineWidth: 2,
+        },
+      ];
 
-    // ==========================================
-    // 🌊 波浪动画引擎 (已加入用户麦克风底部光圈互动)
-    // ==========================================
-    function drawWave() {
+      // ==========================================
+      // 🌊 波浪动画引擎 (已加入用户麦克风底部光圈互动)
+      // ==========================================
+      function drawWave() {
         if (!isRecording && !isAITalking) {
-            document.body.style.setProperty('--bg-light-opacity', '0'); // 关闭AI蓝光
-            document.body.style.setProperty('--user-glow-opacity', '0'); // 关闭用户紫光
-            return; 
+          document.body.style.setProperty("--bg-light-opacity", "0"); // 关闭AI蓝光
+          document.body.style.setProperty("--user-glow-opacity", "0"); // 关闭用户紫光
+          return;
         }
         drawVisual = requestAnimationFrame(drawWave);
         let averageVolume = 0;
-        
+
         // 1. 从音频分析器中获取真实声音数据 (麦克风或AI均有效)
         if (analyser) {
-            const bufferLength = analyser.frequencyBinCount; 
-            const dataArray = new Uint8Array(bufferLength);
-            analyser.getByteFrequencyData(dataArray); 
-            let sum = 0; for(let i = 0; i < bufferLength; i++) sum += dataArray[i];
-            averageVolume = sum / bufferLength;
+          const bufferLength = analyser.frequencyBinCount;
+          const dataArray = new Uint8Array(bufferLength);
+          analyser.getByteFrequencyData(dataArray);
+          let sum = 0;
+          for (let i = 0; i < bufferLength; i++) sum += dataArray[i];
+          averageVolume = sum / bufferLength;
         }
 
         // 2. AI 说话时的兜底模拟逻辑
         if (isAITalking && averageVolume < 2) {
-             const time = Date.now() / 150; 
-             averageVolume = 25 + Math.sin(time) * 15 + Math.random() * 15; 
+          const time = Date.now() / 150;
+          averageVolume = 25 + Math.sin(time) * 15 + Math.random() * 15;
         }
 
         // 3. 计算当前平滑振幅
-        let targetAmplitude = (averageVolume / 100); 
-        if (targetAmplitude < 0.1) targetAmplitude = 0.1; 
-        currentAmplitude += (targetAmplitude - currentAmplitude) * 0.15; 
+        let targetAmplitude = averageVolume / 100;
+        if (targetAmplitude < 0.1) targetAmplitude = 0.1;
+        currentAmplitude += (targetAmplitude - currentAmplitude) * 0.15;
 
         // 🔵 4. 核心：声光同步映射体系 (根据谁在说话亮不同的光)
         if (isAITalking) {
-            // 小智说话：亮起全局蓝色光晕
-            let lightOpacity = currentAmplitude * 1.5; 
-            if (lightOpacity > 1.0) lightOpacity = 1.0; 
-            document.body.style.setProperty('--bg-light-opacity', lightOpacity.toFixed(2));
-            document.body.style.setProperty('--user-glow-opacity', '0');
+          // 小智说话：亮起全局蓝色光晕
+          let lightOpacity = currentAmplitude * 1.5;
+          if (lightOpacity > 1.0) lightOpacity = 1.0;
+          document.body.style.setProperty(
+            "--bg-light-opacity",
+            lightOpacity.toFixed(2),
+          );
+          document.body.style.setProperty("--user-glow-opacity", "0");
         } else if (isRecording) {
-            // 🟣 用户说话：亮起底部紫色光晕！(稍微放大一点倍数，对手机麦克风更灵敏)
-            let userGlow = currentAmplitude * 2.0; 
-            if (userGlow > 1.0) userGlow = 1.0;
-            document.body.style.setProperty('--user-glow-opacity', userGlow.toFixed(2));
-            document.body.style.setProperty('--bg-light-opacity', '0');
+          // 🟣 用户说话：亮起底部紫色光晕！(稍微放大一点倍数，对手机麦克风更灵敏)
+          let userGlow = currentAmplitude * 2.0;
+          if (userGlow > 1.0) userGlow = 1.0;
+          document.body.style.setProperty(
+            "--user-glow-opacity",
+            userGlow.toFixed(2),
+          );
+          document.body.style.setProperty("--bg-light-opacity", "0");
         }
 
         // 5. 绘制底部波浪线
         canvasCtx.clearRect(0, 0, waveCanvas.width, waveCanvas.height);
-        phase += 0.08; 
-        const centerY = waveCanvas.height / 2; const width = waveCanvas.width;
+        phase += 0.08;
+        const centerY = waveCanvas.height / 2;
+        const width = waveCanvas.width;
         const currentWaves = isRecording ? userWaves : aiWaves;
-        currentWaves.forEach(wave => {
-            canvasCtx.beginPath(); canvasCtx.moveTo(0, centerY);
-            for (let x = 0; x <= width; x++) {
-                const xNorm = x / width; const taper = Math.sin(xNorm * Math.PI); 
-                const y = centerY + Math.sin(xNorm * 8 + phase * wave.speed) * (currentAmplitude * 40 * wave.height) * taper;
-                canvasCtx.lineTo(x, y);
-            }
-            canvasCtx.strokeStyle = wave.color; canvasCtx.lineWidth = wave.lineWidth; canvasCtx.stroke();
+        currentWaves.forEach((wave) => {
+          canvasCtx.beginPath();
+          canvasCtx.moveTo(0, centerY);
+          for (let x = 0; x <= width; x++) {
+            const xNorm = x / width;
+            const taper = Math.sin(xNorm * Math.PI);
+            const y =
+              centerY +
+              Math.sin(xNorm * 8 + phase * wave.speed) *
+                (currentAmplitude * 40 * wave.height) *
+                taper;
+            canvasCtx.lineTo(x, y);
+          }
+          canvasCtx.strokeStyle = wave.color;
+          canvasCtx.lineWidth = wave.lineWidth;
+          canvasCtx.stroke();
         });
-    }
+      }
 
-    // 停止所有动画并关闭所有光效
-    function stopVisualizer() { 
-        isAITalking = false; 
-        document.body.style.setProperty('--bg-light-opacity', '0'); // 关闭AI蓝色呼吸灯
-        document.body.style.setProperty('--user-glow-opacity', '0'); // 关闭用户紫色光圈
-        
-        if (drawVisual) { cancelAnimationFrame(drawVisual); drawVisual = null; } 
-        waveCanvas.style.display = 'none'; waveSpacer.style.display = 'block'; 
-    }
-    async function startVisualizer() {
+      // 停止所有动画并关闭所有光效
+      function stopVisualizer() {
+        isAITalking = false;
+        document.body.style.setProperty("--bg-light-opacity", "0"); // 关闭AI蓝色呼吸灯
+        document.body.style.setProperty("--user-glow-opacity", "0"); // 关闭用户紫色光圈
+
+        if (drawVisual) {
+          cancelAnimationFrame(drawVisual);
+          drawVisual = null;
+        }
+        waveCanvas.style.display = "none";
+        waveSpacer.style.display = "block";
+      }
+      async function startVisualizer() {
         if (!audioContext) {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-                microphone = audioContext.createMediaStreamSource(stream);
-                analyser = audioContext.createAnalyser();
-                analyser.fftSize = 256; microphone.connect(analyser);
-            } catch(err) { return; }
+          audioContext = new (
+            window.AudioContext || window.webkitAudioContext
+          )();
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+              audio: true,
+              video: false,
+            });
+            microphone = audioContext.createMediaStreamSource(stream);
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 256;
+            microphone.connect(analyser);
+          } catch (err) {
+            return;
+          }
         }
-        if (audioContext.state === 'suspended') audioContext.resume();
-        waveSpacer.style.display = 'none'; waveCanvas.style.display = 'block';
+        if (audioContext.state === "suspended") audioContext.resume();
+        waveSpacer.style.display = "none";
+        waveCanvas.style.display = "block";
         if (!drawVisual) drawWave();
-    }
-    function startAIVisualizer() { isAITalking = true; waveSpacer.style.display = 'none'; waveCanvas.style.display = 'block'; if (!drawVisual) drawWave(); }
-    function stopVisualizer() { 
-            isAITalking = false; 
-            document.body.style.setProperty('--bg-light-opacity', '0'); // 关闭呼吸灯
-            if (drawVisual) { cancelAnimationFrame(drawVisual); drawVisual = null; } 
-            waveCanvas.style.display = 'none'; waveSpacer.style.display = 'block'; 
+      }
+      function startAIVisualizer() {
+        isAITalking = true;
+        waveSpacer.style.display = "none";
+        waveCanvas.style.display = "block";
+        if (!drawVisual) drawWave();
+      }
+      function stopVisualizer() {
+        isAITalking = false;
+        document.body.style.setProperty("--bg-light-opacity", "0"); // 关闭呼吸灯
+        if (drawVisual) {
+          cancelAnimationFrame(drawVisual);
+          drawVisual = null;
         }
-    // ==========================================
-    // 🧠 接口交互
-    // ==========================================
-   // ==========================================
-    // 🧠 接口交互 (优化同步与人设)
-    // ==========================================
-   // ==========================================
-    // 🧠 接口交互 (优化同步与人设)
-    // ==========================================
-    async function callDeepSeek(text) {
+        waveCanvas.style.display = "none";
+        waveSpacer.style.display = "block";
+      }
+      // ==========================================
+      // 🧠 接口交互
+      // ==========================================
+      // ==========================================
+      // 🧠 接口交互 (优化同步与人设)
+      // ==========================================
+      // ==========================================
+      // 🧠 接口交互 (优化同步与人设)
+      // ==========================================
+      async function callDeepSeek(text) {
         try {
-            // 【优化】采用高级的星芒图标 + 流光文字效果，并美化用户的提问排版
-            messageEl.innerHTML = `
+          // 【优化】采用高级的星芒图标 + 流光文字效果，并美化用户的提问排版
+          messageEl.innerHTML = `
                 <div class="user-text-style"><strong>🧑 你：</strong>${text}</div>
                 <div class="ai-generating-wrapper">
                     <svg class="ai-sparkle-icon" viewBox="0 0 24 24" width="18" height="18" fill="url(#sparkle-grad)">
@@ -1147,89 +1636,116 @@
                     </svg>
                     小智正在极速检索知识库...
                 </div>
-            `; 
-            
-            statusEl.innerText = "正在为您检索信息"; 
-            
-            const dsResponse = await fetch('https://ojr9d97ks4.sealosbja.site/chat', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: text })
-            });
-            const data = await dsResponse.json();
-            const aiReply = data.reply;
-            
-            generateTalkingHeadVideo(text, aiReply);
-        } catch (error) {
-            statusEl.innerText = "网络似乎有点小情绪"; 
-            enableMicUI(); switchAvatarState('idle'); 
-            messageEl.innerHTML = `<div class="user-text-style"><strong>🧑 你：</strong>${text}</div><br><strong>小智：</strong>网络好像开小差了，请稍后再试一次吧。`;
-        }
-    }
+            `;
 
-   // ==========================================
-    // 🧠 接口交互 (修复跨域导致的静音问题)
-    // ==========================================
-    async function generateTalkingHeadVideo(userText, aiReply) {
+          statusEl.innerText = "正在为您检索信息";
+
+          const dsResponse = await fetch(
+            "https://ojr9d97ks4.sealosbja.site/chat",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ text: text }),
+            },
+          );
+          const data = await dsResponse.json();
+          const aiReply = data.reply;
+
+          generateTalkingHeadVideo(text, aiReply);
+        } catch (error) {
+          statusEl.innerText = "网络似乎有点小情绪";
+          enableMicUI();
+          switchAvatarState("idle");
+          messageEl.innerHTML = `<div class="user-text-style"><strong>🧑 你：</strong>${text}</div><br><strong>小智：</strong>网络好像开小差了，请稍后再试一次吧。`;
+        }
+      }
+
+      // ==========================================
+      // 🧠 接口交互 (修复跨域导致的静音问题)
+      // ==========================================
+      async function generateTalkingHeadVideo(userText, aiReply) {
         try {
-            statusEl.innerText = "正在努力组织语言"; 
-            
-            const generateRes = await fetch('https://ojr9d97ks4.sealosbja.site/generate', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: aiReply })
-            });
-            const generateData = await generateRes.json();
-            if (!generateData.audio_url) throw new Error("获取音频失败");
+          statusEl.innerText = "正在努力组织语言";
 
-            const safeAudioUrl = generateData.audio_url.replace("http://", "https://");
-            const audioPlayer = new Audio(safeAudioUrl);
-            
-            // 🚨 修复核心：移除了 crossOrigin 和 Web Audio API (audioContext) 的绑定
-            // 避免第三方服务器不支持跨域而导致浏览器强制静音
-            activeAudioPlayer = audioPlayer;
-            audioPlayer.muted = isGlobalMuted;
-            
-            // 切换状态并渲染文本
-            switchAvatarState('talking'); 
-            const formattedHTML = typeof marked !== 'undefined' ? marked.parse(aiReply) : aiReply.replace(/\n/g, '<br>');
-            messageEl.innerHTML = `<strong>你：</strong>${userText}<br><br><strong>小智：</strong><div class="ai-response-format">${formattedHTML}</div>`; 
+          const generateRes = await fetch(
+            "https://ojr9d97ks4.sealosbja.site/generate",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ text: aiReply }),
+            },
+          );
+          const generateData = await generateRes.json();
+          if (!generateData.audio_url) throw new Error("获取音频失败");
 
-            statusEl.innerText = "为您找到以下答案"; 
-            isAIThinking = false;
-            disableMicUI("小智正在讲话...");
+          const safeAudioUrl = generateData.audio_url.replace(
+            "http://",
+            "https://",
+          );
+          const audioPlayer = new Audio(safeAudioUrl);
 
-            // 增加 play() 的错误捕获，应对部分手机浏览器的严格自动播放限制
-            audioPlayer.play().catch(err => {
-                console.warn("浏览器拦截了自动播放:", err);
-                statusEl.innerText = "请点击屏幕任意位置播放声音";
-                // 引导用户点击后恢复播放
-                document.body.addEventListener('click', () => {
-                     audioPlayer.play();
-                     statusEl.innerText = "为您找到以下答案"; 
-                }, { once: true });
-            });
-            
-            // 启动可视化动画（由于没有连接 analyser，这里会自动触发我们写好的模拟律动）
-            startAIVisualizer(); 
+          // 🚨 修复核心：移除了 crossOrigin 和 Web Audio API (audioContext) 的绑定
+          // 避免第三方服务器不支持跨域而导致浏览器强制静音
+          activeAudioPlayer = audioPlayer;
+          audioPlayer.muted = isGlobalMuted;
 
-            audioPlayer.onended = () => {
-                activeAudioPlayer = null; 
-                statusEl.innerText = "小智已准备好，请随时提问"; 
-                switchAvatarState('idle'); 
-                stopVisualizer(); enableMicUI();    
-            };
+          // 切换状态并渲染文本
+          switchAvatarState("talking");
+          const formattedHTML =
+            typeof marked !== "undefined"
+              ? marked.parse(aiReply)
+              : aiReply.replace(/\n/g, "<br>");
+          messageEl.innerHTML = `<strong>你：</strong>${userText}<br><br><strong>小智：</strong><div class="ai-response-format">${formattedHTML}</div>`;
+
+          statusEl.innerText = "为您找到以下答案";
+          isAIThinking = false;
+          disableMicUI("小智正在讲话...");
+
+          // 增加 play() 的错误捕获，应对部分手机浏览器的严格自动播放限制
+          audioPlayer.play().catch((err) => {
+            console.warn("浏览器拦截了自动播放:", err);
+            statusEl.innerText = "请点击屏幕任意位置播放声音";
+            // 引导用户点击后恢复播放
+            document.body.addEventListener(
+              "click",
+              () => {
+                audioPlayer.play();
+                statusEl.innerText = "为您找到以下答案";
+              },
+              { once: true },
+            );
+          });
+
+          // 启动可视化动画（由于没有连接 analyser，这里会自动触发我们写好的模拟律动）
+          startAIVisualizer();
+
+          audioPlayer.onended = () => {
+            activeAudioPlayer = null;
+            statusEl.innerText = "小智已准备好，请随时提问";
+            switchAvatarState("idle");
+            stopVisualizer();
+            enableMicUI();
+          };
         } catch (error) {
-            activeAudioPlayer = null; 
-            statusEl.innerText = "声音加载遇到了点问题";
-            stopVisualizer(); enableMicUI(); switchAvatarState('idle'); 
-            
-            const formattedHTML = typeof marked !== 'undefined' ? marked.parse(aiReply) : aiReply.replace(/\n/g, '<br>');
-            messageEl.innerHTML = `<strong>你：</strong>${userText}<br><br><strong>小智：</strong><div class="ai-response-format">${formattedHTML}</div>`; 
-        }
-    }
-   // ==========================================
-    // ⛅ 天气模块 (终极优化版：国内极速接口)
-    // ==========================================
-    const weatherEl = document.querySelector('.weather-info');
+          activeAudioPlayer = null;
+          statusEl.innerText = "声音加载遇到了点问题";
+          stopVisualizer();
+          enableMicUI();
+          switchAvatarState("idle");
 
-    function getWeatherDesc(code) {
+          const formattedHTML =
+            typeof marked !== "undefined"
+              ? marked.parse(aiReply)
+              : aiReply.replace(/\n/g, "<br>");
+          messageEl.innerHTML = `<strong>你：</strong>${userText}<br><br><strong>小智：</strong><div class="ai-response-format">${formattedHTML}</div>`;
+        }
+      }
+      // ==========================================
+      // ⛅ 天气模块 (终极优化版：国内极速接口)
+      // ==========================================
+      const weatherEl = document.querySelector(".weather-info");
+
+      function getWeatherDesc(code) {
         if (code === 0) return "晴 ☀️";
         if (code === 1 || code === 2) return "多云 ⛅";
         if (code === 3) return "阴 ☁️";
@@ -1239,149 +1755,344 @@
         if (code >= 80 && code <= 82) return "阵雨 🌦️";
         if (code >= 95) return "雷暴 ⛈️";
         return "天气";
-    }
+      }
 
-    async function fetchRealTimeWeather() {
+      // ==========================================
+      // ⛅ 天气模块 (精准逆地理编码 + 移动端高精度优化)
+      // ==========================================
+
+      function getWeatherDesc(code) {
+        if (code === 0) return "晴 ☀️";
+        if (code === 1 || code === 2) return "多云 ⛅";
+        if (code === 3) return "阴 ☁️";
+        if (code >= 45 && code <= 48) return "雾 🌫️";
+        if (code >= 51 && code <= 67) return "雨 🌧️";
+        if (code >= 71 && code <= 77) return "雪 ❄️";
+        if (code >= 80 && code <= 82) return "阵雨 🌦️";
+        if (code >= 95) return "雷暴 ⛈️";
+        return "未知";
+      }
+      // 🌟 新增：页面一解析完，立刻渲染基础时间与节日，防止一片空白
+      updatePersonalizedGreeting();
+
+      // 原有的天气调用
+      fetchRealTimeWeather();
+      async function fetchRealTimeWeather() {
         try {
-            // 1. 使用极速国内 IP 接口获取当前城市和经纬度估算 (比 HTML5 GPS 快 10 倍，无需授权)
-            // 采用 jsonp 替代跨域限制
-            const getCity = async () => {
-                return new Promise((resolve) => {
-                    const script = document.createElement('script');
-                    script.src = 'https://whois.pconline.com.cn/ipJson.jsp?callback=weatherIpCallback';
-                    document.body.appendChild(script);
-                    window.weatherIpCallback = (data) => {
-                        document.body.removeChild(script);
-                        delete window.weatherIpCallback;
-                        // 取城市名，去掉"市"
-                        let city = (data.city || data.pro || "重庆").replace(/市$/, '');
-                        resolve(city);
-                    };
-                    // 2秒超时保底
-                    setTimeout(() => resolve("重庆"), 2000); 
-                });
-            };
+          weatherEl.innerText = "精准定位中...";
 
-            const cityName = await getCity();
-            
-            // 2. 如果之前获得了精准经纬度最好，没有的话，尝试发起 HTML5 定位查天气，或者直接用备用坐标
-            navigator.geolocation.getCurrentPosition(
-                async (position) => {
-                    const lat = position.coords.latitude;
-                    const lon = position.coords.longitude;
-                    const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=auto`);
-                    const weatherData = await weatherRes.json();
-                    const temp = Math.round(weatherData.current_weather.temperature);
-                    const code = weatherData.current_weather.weathercode;
-                    weatherEl.innerText = `${cityName} ${temp}°C ${getWeatherDesc(code)}`;
-                },
-                async () => {
-                    // 拒绝定位时，直接使用默认坐标（例如重庆经纬度）结合刚才查到的城市名
-                    const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=29.53&longitude=106.55&current_weather=true&timezone=auto`);
-                    const weatherData = await weatherRes.json();
-                    weatherEl.innerText = `${cityName} ${Math.round(weatherData.current_weather.temperature)}°C ${getWeatherDesc(weatherData.current_weather.weathercode)}`;
-                },
-                { timeout: 3000, enableHighAccuracy: false }
-            );
+          // 1. IP 城市兜底 (最快，但只到市级)
+          const getCity = async () => {
+            return new Promise((resolve) => {
+              const script = document.createElement("script");
+              script.src =
+                "https://whois.pconline.com.cn/ipJson.jsp?callback=weatherIpCallback";
+              document.body.appendChild(script);
+              window.weatherIpCallback = (data) => {
+                document.body.removeChild(script);
+                delete window.weatherIpCallback;
+                resolve((data.city || data.pro || "重庆").replace(/市$/, ""));
+              };
+              setTimeout(() => resolve("重庆"), 2000);
+            });
+          };
 
+          const fallbackCity = await getCity();
+
+          // 2. 发起高精度 GPS 定位 (需要 HTTPS 支持)
+          navigator.geolocation.getCurrentPosition(
+            async (position) => {
+              const lat = position.coords.latitude;
+              const lon = position.coords.longitude;
+
+              try {
+                // 🌟 新增：使用开源免费的 OSM 接口，将经纬度转换为精确的区/县/街道名称
+                const geoRes = await fetch(
+                  `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&accept-language=zh-CN`,
+                );
+                const geoData = await geoRes.json();
+
+                // 智能提取地址：优先拿 区/县(suburb) 或 镇(town)，没有再拿 城市(city)
+                let preciseLocation = fallbackCity;
+                if (geoData && geoData.address) {
+                  preciseLocation =
+                    geoData.address.suburb ||
+                    geoData.address.city_district ||
+                    geoData.address.town ||
+                    geoData.address.city ||
+                    fallbackCity;
+                  preciseLocation = preciseLocation.replace(/市$/, ""); // 清理后缀
+                }
+
+                // 获取精确坐标的天气
+                const weatherRes = await fetch(
+                  `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=auto`,
+                );
+                const weatherData = await weatherRes.json();
+                const temp = Math.round(
+                  weatherData.current_weather.temperature,
+                );
+                const code = weatherData.current_weather.weathercode;
+
+                weatherEl.innerText = `${preciseLocation} ${temp}°C ${getWeatherDesc(code)}`;
+                const descEl = document.getElementById("greet-desc");
+                if (descEl) {
+                  descEl.style.transition = "opacity 0.25s ease-in-out";
+                  descEl.style.opacity = "0"; // 先淡出
+                  setTimeout(() => {
+                    updatePersonalizedGreeting(temp, code); // 偷偷换掉文字
+                    descEl.style.opacity = "1"; // 再淡入
+                  }, 250);
+                }
+              } catch (e) {
+                // 如果逆地理编码 API 失败，退回 IP 城市，但天气依旧用精确经纬度查
+                const weatherRes = await fetch(
+                  `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=auto`,
+                );
+                const weatherData = await weatherRes.json();
+                weatherEl.innerText = `${fallbackCity} ${Math.round(weatherData.current_weather.temperature)}°C ${getWeatherDesc(weatherData.current_weather.weathercode)}`;
+                const descEl = document.getElementById("greet-desc");
+                if (descEl) {
+                  descEl.style.transition = "opacity 0.25s ease-in-out";
+                  descEl.style.opacity = "0";
+                  setTimeout(() => {
+                    updatePersonalizedGreeting(tempFallback, codeFallback);
+                    descEl.style.opacity = "1";
+                  }, 250);
+                }
+              }
+            },
+            async (error) => {
+              console.warn("高精度定位失败或被拒绝:", error.message);
+              // 拒绝定位或失败时，使用 IP 城市和默认坐标兜底
+              const weatherRes = await fetch(
+                `https://api.open-meteo.com/v1/forecast?latitude=29.53&longitude=106.55&current_weather=true&timezone=auto`,
+              );
+              const weatherData = await weatherRes.json();
+              weatherEl.innerText = `${fallbackCity} ${Math.round(weatherData.current_weather.temperature)}°C ${getWeatherDesc(weatherData.current_weather.weathercode)}`;
+            },
+            {
+              // 🌟 核心参数优化：针对手机端
+              enableHighAccuracy: true, // 强制调用手机 GPS 芯片，而非仅依赖网络
+              timeout: 10000, // 给手机 10 秒时间搜星，3 秒绝对不够
+              maximumAge: 60000, // 允许使用 1 分钟内的定位缓存，加快速度
+            },
+          );
         } catch (e) {
-            weatherEl.innerText = "天气服务暂歇";
+          weatherEl.innerText = "天气服务暂歇";
         }
-    }
-    
-    fetchRealTimeWeather();
-   // ==========================================
-    // 🌌 3. 常驻环境背景 (交互增强版：按住加速光梭)
-    // ==========================================
-    const bgCanvas = document.getElementById('global-bg-canvas');
-    const bgCtx = bgCanvas.getContext('2d');
-    let bgW = bgCanvas.width = window.innerWidth;
-    let bgH = bgCanvas.height = window.innerHeight;
-    const bgParticles = [];
-    
-    // 生成 45 个柔和的悬浮光斑
-    for(let i = 0; i < 45; i++) {
+      }
+
+      fetchRealTimeWeather();
+      // ==========================================
+      // 🌌 3. 常驻环境背景 (交互增强版：按住加速光梭)
+      // ==========================================
+      const bgCanvas = document.getElementById("global-bg-canvas");
+      const bgCtx = bgCanvas.getContext("2d");
+      let bgW = (bgCanvas.width = window.innerWidth);
+      let bgH = (bgCanvas.height = window.innerHeight);
+      const bgParticles = [];
+
+      // 生成 45 个柔和的悬浮光斑
+      for (let i = 0; i < 45; i++) {
         bgParticles.push({
-            x: Math.random() * bgW, 
-            y: Math.random() * bgH,
-            radius: Math.random() * 3 + 1,
-            vx: (Math.random() - 0.5) * 0.3,
-            vy: Math.random() * -0.6 - 0.2, // 基础缓速上浮
-            alpha: Math.random() * 0.5 + 0.1,
-            alphaChange: (Math.random() * 0.008 + 0.003) * (Math.random() > 0.5 ? 1 : -1),
-            color: Math.random() > 0.5 ? '155, 81, 224' : '74, 144, 226'
+          x: Math.random() * bgW,
+          y: Math.random() * bgH,
+          radius: Math.random() * 3 + 1,
+          vx: (Math.random() - 0.5) * 0.3,
+          vy: Math.random() * -0.6 - 0.2, // 基础缓速上浮
+          alpha: Math.random() * 0.5 + 0.1,
+          alphaChange:
+            (Math.random() * 0.008 + 0.003) * (Math.random() > 0.5 ? 1 : -1),
+          color: Math.random() > 0.5 ? "155, 81, 224" : "74, 144, 226",
         });
-    }
+      }
 
-    // 全局速度倍率，用于实现平滑的“推背感”加速和减速
-    let globalSpeedMultiplier = 1;
+      // 全局速度倍率，用于实现平滑的“推背感”加速和减速
+      let globalSpeedMultiplier = 1;
 
-    function drawBgParticles() {
+      function drawBgParticles() {
         bgCtx.clearRect(0, 0, bgW, bgH);
 
         // 💡 调整 1：最高速度倍率从 15 降到 8，让上升感更克制、高级
-        let targetSpeed = (typeof isHolding !== 'undefined' && isHolding) ? 8 : 1;
-        
+        let targetSpeed = typeof isHolding !== "undefined" && isHolding ? 8 : 1;
+
         // 💡 调整 2：缓动系数从 0.1 降到 0.05，让加速和减速的过程变得更平滑、更舒缓
         globalSpeedMultiplier += (targetSpeed - globalSpeedMultiplier) * 0.05;
 
-        for(let i = 0; i < bgParticles.length; i++) {
-            let p = bgParticles[i];
-            
-            // 计算当前帧的真实速度
-            let currentVy = p.vy * globalSpeedMultiplier;
-            // 速度加快时，稍微保留一点左右摇摆，看起来更自然
-            let currentVx = globalSpeedMultiplier > 2 ? p.vx * 0.4 : p.vx;
-            
-            p.x += currentVx; 
-            p.y += currentVy;
-            
-            // 按住时亮度调整得更柔和一些
-            let maxAlpha = globalSpeedMultiplier > 2 ? 0.75 : 0.6;
-            p.alpha += p.alphaChange * (globalSpeedMultiplier > 2 ? 1.5 : 1);
-            
-            if(p.alpha <= 0.05) {
-                p.alpha = 0.05;
-                p.alphaChange = Math.abs(p.alphaChange);
-            } else if (p.alpha >= maxAlpha) {
-                p.alpha = maxAlpha;
-                p.alphaChange = -Math.abs(p.alphaChange);
-            }
-            
-            // 越界重置
-            if(p.y < -20) {
-                p.y = bgH + 20;
-                p.x = Math.random() * bgW;
-                p.alpha = 0; 
-            }
-            if(p.x < -10) p.x = bgW + 10;
-            if(p.x > bgW + 10) p.x = -10;
-            
-            // 💡 调整 3：拉长线条的阈值相应降低，尾巴稍微缩短，更符合较慢的速度
-            bgCtx.beginPath(); 
-            if (globalSpeedMultiplier > 2.5) {
-                bgCtx.moveTo(p.x, p.y);
-                bgCtx.lineTo(p.x, p.y - currentVy * 1.2); // 尾巴长度系数从 1.5 降到 1.2
-                bgCtx.strokeStyle = `rgba(${p.color}, ${p.alpha})`;
-                bgCtx.lineWidth = p.radius * 2;
-                bgCtx.lineCap = "round";
-                bgCtx.stroke();
-            } else {
-                bgCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); 
-                bgCtx.fillStyle = `rgba(${p.color}, ${p.alpha})`; 
-                bgCtx.fill();
-            }
+        for (let i = 0; i < bgParticles.length; i++) {
+          let p = bgParticles[i];
+
+          // 计算当前帧的真实速度
+          let currentVy = p.vy * globalSpeedMultiplier;
+          // 速度加快时，稍微保留一点左右摇摆，看起来更自然
+          let currentVx = globalSpeedMultiplier > 2 ? p.vx * 0.4 : p.vx;
+
+          p.x += currentVx;
+          p.y += currentVy;
+
+          // 按住时亮度调整得更柔和一些
+          let maxAlpha = globalSpeedMultiplier > 2 ? 0.75 : 0.6;
+          p.alpha += p.alphaChange * (globalSpeedMultiplier > 2 ? 1.5 : 1);
+
+          if (p.alpha <= 0.05) {
+            p.alpha = 0.05;
+            p.alphaChange = Math.abs(p.alphaChange);
+          } else if (p.alpha >= maxAlpha) {
+            p.alpha = maxAlpha;
+            p.alphaChange = -Math.abs(p.alphaChange);
+          }
+
+          // 越界重置
+          if (p.y < -20) {
+            p.y = bgH + 20;
+            p.x = Math.random() * bgW;
+            p.alpha = 0;
+          }
+          if (p.x < -10) p.x = bgW + 10;
+          if (p.x > bgW + 10) p.x = -10;
+
+          // 💡 调整 3：拉长线条的阈值相应降低，尾巴稍微缩短，更符合较慢的速度
+          bgCtx.beginPath();
+          if (globalSpeedMultiplier > 2.5) {
+            bgCtx.moveTo(p.x, p.y);
+            bgCtx.lineTo(p.x, p.y - currentVy * 1.2); // 尾巴长度系数从 1.5 降到 1.2
+            bgCtx.strokeStyle = `rgba(${p.color}, ${p.alpha})`;
+            bgCtx.lineWidth = p.radius * 2;
+            bgCtx.lineCap = "round";
+            bgCtx.stroke();
+          } else {
+            bgCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+            bgCtx.fillStyle = `rgba(${p.color}, ${p.alpha})`;
+            bgCtx.fill();
+          }
         }
         requestAnimationFrame(drawBgParticles);
+      }
+      drawBgParticles();
+
+      // 监听屏幕大小变化
+      window.addEventListener("resize", () => {
+        bgW = bgCanvas.width = window.innerWidth;
+        bgH = bgCanvas.height = window.innerHeight;
+      });
+      // ==========================================
+      // 🌟 动态问候语引擎 (结合时间、节日、节气、天气)
+      // ==========================================
+      function updatePersonalizedGreeting(temp, weatherCode) {
+        const descEl = document.getElementById("greet-desc");
+        const titleEl = document.getElementById("greet-title");
+        if (!descEl) return;
+
+        const now = new Date();
+        const hour = now.getHours();
+        const month = now.getMonth() + 1;
+        const date = now.getDate();
+        const day = now.getDay(); // 0 是周日，1-6 是周一到周六
+
+        // 1. 格式化日期 MM-DD 用于匹配节日
+        const dateStr = `${month.toString().padStart(2, "0")}-${date.toString().padStart(2, "0")}`;
+
+        // 2. 时间段问候 (修改标题)
+        let timeGreeting = "嗨";
+        if (hour >= 5 && hour < 9) timeGreeting = "早上好";
+        else if (hour >= 9 && hour < 12) timeGreeting = "上午好";
+        else if (hour >= 12 && hour < 14) timeGreeting = "中午好";
+        else if (hour >= 14 && hour < 18) timeGreeting = "下午好";
+        else if (hour >= 18 && hour < 23) timeGreeting = "晚上好";
+        else timeGreeting = "夜深了";
+
+        if (titleEl)
+          titleEl.innerHTML = `👋 ${timeGreeting}，我是<span class="highlight-name">小智</span>`;
+
+        // 3. 特殊节日与节气字典 (公历近似值)
+        const specialDays = {
+          "01-01": "元旦快乐！新的一年，小智陪你一起进步。✨",
+          "02-14": "今天是情人节，不管有没有对象，都要好好爱自己哦！🌹",
+          "03-08": "妇女节快乐！祝所有的女同学和女老师节日快乐！💐",
+          "03-12": "植树节，种下一棵树，也种下一个小目标吧！🌳",
+          "03-20": "今日春分，春意盎然，正是读书的好时节。🌸", // 节气近似
+          "04-04": "清明时节，适合踏青，放松一下心情吧。🍃", // 节气近似
+          "05-01": "五一劳动节快乐！致敬每一位努力奋斗的你！👷",
+          "05-04": "五四青年节，青春由磨砺而出彩！🔥",
+          "05-05": "今日立夏，万物繁茂，夏天要悄悄来啦！🍉", // 节气近似
+          "06-01": "儿童节快乐！保持童心，永远好奇。🎈",
+          "06-21": "今日夏至，白昼最长，注意防暑降温哦！☀️", // 节气近似
+          "08-08": "今日立秋，秋天的第一杯奶茶安排上了吗？🍂", // 节气近似
+          "09-10": "教师节到了，记得给亲爱的老师们发个祝福哦！🎓",
+          "09-23": "今日秋分，秋高气爽，适合户外运动。🍁", // 节气近似
+          "10-01": "国庆节快乐！愿祖国繁荣昌盛！🇨🇳",
+          "11-07": "今日立冬，冬天来啦，记得添衣保暖！🧣", // 节气近似
+          "12-21": "今日冬至，记得吃饺子（或者汤圆）哦！🥟", // 节气近似
+          "12-25": "圣诞快乐！祝你今天能收到心仪的礼物。🎄",
+          "12-31": "今天是今年的最后一天啦，准备好跨年了吗？🎉",
+        };
+
+        let personalizedTip = "";
+
+        // 💡 优先级 1：节日和节气
+        if (specialDays[dateStr]) {
+          personalizedTip = specialDays[dateStr];
+        }
+        // 💡 优先级 2：星期状态 (如果没有节日)
+        else {
+          if (day === 1 && hour < 12)
+            personalizedTip = "新的一周开始啦，元气满满地冲鸭！💪";
+          else if (day === 5 && hour > 12)
+            personalizedTip = "马上就周末啦，坚持就是胜利！🍻";
+          else if (day === 0 || day === 6)
+            personalizedTip = "周末好时光，记得劳逸结合好好休息哦。☕";
+        }
+
+        // 💡 优先级 3：天气与温度提醒 (只在有对应情况时叠加)
+        let weatherTip = "";
+        if (temp !== undefined && weatherCode !== undefined) {
+          if (temp >= 32) weatherTip = "今天天气炎热，请多喝水注意防暑。";
+          else if (temp <= 10)
+            weatherTip = "今天气温较低，出门记得多穿点衣服。";
+
+          // 天气代码: 51-67(雨), 71-77(雪), 80-82(阵雨), 95(雷暴)
+          if (
+            (weatherCode >= 51 && weatherCode <= 67) ||
+            (weatherCode >= 80 && weatherCode <= 82)
+          ) {
+            weatherTip = "外面在下雨，出门记得带把伞哦。☔";
+          } else if (weatherCode >= 71 && weatherCode <= 77) {
+            weatherTip = "下雪啦！注意保暖和出行安全。❄️";
+          }
+        }
+
+       // 组合最终文案 (UI 视觉终极版 - 镜像对称 + 像素级对齐)
+    
+    // 1. 顶部基础介绍 (新增淡蓝色、右置高亮卡片)
+    // 💡 270deg 渐变让颜色集中在右侧，与紫色的 90deg 相对称
+    let finalDesc = `<div style="background: linear-gradient(270deg, rgba(74, 144, 226, 0.08) 0%, rgba(74, 144, 226, 0.01) 100%); margin: 0 -10px ${ (personalizedTip || weatherTip) ? '10px' : '4px' } -10px; padding: 8px 7px 8px 10px; border-right: 3px solid rgba(74, 144, 226, 0.4); border-radius: 6px; color: #444; font-size: 12px; line-height: 1.5; font-weight: 400;">我是人工智能学院专属助手小智，你的AI学习与生活指南。</div>`;
+    
+    // 2. 个性化提示卡片 (淡紫色、左置高亮卡片)
+    if (personalizedTip || weatherTip) {
+        finalDesc += `<div style="background: linear-gradient(90deg, rgba(155, 81, 224, 0.08) 0%, rgba(74, 144, 226, 0.03) 100%); margin: 0 -10px 12px -10px; padding: 8px 10px 8px 7px; border-left: 3px solid rgba(155, 81, 224, 0.4); border-radius: 6px; display: flex; flex-direction: column; gap: 5px;">`;
+        
+        if (personalizedTip) {
+            finalDesc += `<div style="color: #7b40bc; font-size: 12px; line-height: 1.4; font-weight: 500;">${personalizedTip}</div>`;
+        }
+        if (weatherTip) {
+            finalDesc += `<div style="color: #4a75a2; font-size: 12px; line-height: 1.4; font-weight: 500;">${weatherTip}</div>`;
+        }
+        
+        finalDesc += `</div>`;
     }
-    drawBgParticles();
+    
+    // 3. 底部操作指引
+    finalDesc += `<div style="font-size: 11px; color: #999; display: flex; align-items: center; gap: 4px;">
+        <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+        </svg>
+        按住下方即可语音交流
+    </div>`;
 
-    // 监听屏幕大小变化
-    window.addEventListener('resize', () => { 
-        bgW = bgCanvas.width = window.innerWidth; 
-        bgH = bgCanvas.height = window.innerHeight; 
-    });
-
-</script>
-</body>
+    descEl.innerHTML = finalDesc;
+      }
+    </script>
+  </body>
 </html>

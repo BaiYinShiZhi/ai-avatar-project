@@ -630,22 +630,39 @@
         "本专业实习岗位和要求是什么？", "合作企业招聘信息在哪里查看？", "简历制作和面试有哪些技巧？", "专科升学相关政策与渠道？"
     ];
     // ==========================================
-    // 📳 4. 交互音效与震动反馈引擎
+    // 📳 4. 交互音效与震动反馈引擎 (移动端破冰兼容版)
     // ==========================================
-    // 👉 请将这里的链接替换为你找好的音效文件地址 (推荐短促的 mp3 或 wav)
+    // 🚨 注意：请务必将下面的 .mp3 替换为你真实可访问的音效链接！
     const pressSound = new Audio('https://ai-avatar-wwl.oss-cn-beijing.aliyuncs.com/dianji.mp3'); 
     const releaseSound = new Audio('https://ai-avatar-wwl.oss-cn-beijing.aliyuncs.com/fasong.mp3'); 
-    const cancelSound = new Audio('https://ai-avatar-wwl.oss-cn-beijing.aliyuncs.com/quxiao.mp3'); // 可选：上划取消时的失败音效
+    const cancelSound = new Audio('https://ai-avatar-wwl.oss-cn-beijing.aliyuncs.com/quxiao1.mp3'); 
 
-    // 预加载音效，防止第一次点击时声音延迟
     pressSound.preload = 'auto';
     releaseSound.preload = 'auto';
     cancelSound.preload = 'auto';
 
+    // 🚀 核心修复：移动端音频“破冰”解锁机制
+    // 在用户第一次触摸屏幕时，立刻无声地播放并暂停所有音效，获取浏览器的播放通行证
+    document.body.addEventListener('touchstart', function() {
+        [pressSound, releaseSound, cancelSound].forEach(audio => {
+            if (audio.paused && !audio.unlocked) {
+                audio.muted = true; // 先静音，防止吓到用户
+                audio.play().then(() => {
+                    audio.pause();
+                    audio.currentTime = 0;
+                    audio.muted = false; // 获取到通行证后，恢复声音
+                    audio.unlocked = true; // 标记为已解锁
+                }).catch(() => {
+                    console.warn("音频破冰被拦截，检查链接是否有效");
+                });
+            }
+        });
+    }, { once: true, passive: true }); // once: true 保证这个破解逻辑只执行一次
+
     // 封装震动函数 (兼容安卓，静默忽略 iOS)
     function triggerVibration(duration) {
         if (navigator.vibrate) {
-            navigator.vibrate(duration); // 传入毫秒数
+            navigator.vibrate(duration); 
         }
     }
 
@@ -681,9 +698,6 @@
     let startY = 0;
     const CANCEL_THRESHOLD = 50; 
 
-    // ==========================================
-    // 🤖 丝滑状态切换引擎 (淡入淡出核心)
-    // ==========================================
     // ==========================================
     // 🤖 丝滑状态切换引擎 (修复手机端硬件解码白屏)
     // ==========================================
@@ -1305,27 +1319,26 @@
     function drawBgParticles() {
         bgCtx.clearRect(0, 0, bgW, bgH);
 
-        // 💡 核心交互逻辑：监听 isHolding 变量（用户是否按住麦克风）
-        // 如果按住，目标速度飙升到 15 倍；松开则恢复 1 倍
-        let targetSpeed = (typeof isHolding !== 'undefined' && isHolding) ? 15 : 1;
+        // 💡 调整 1：最高速度倍率从 15 降到 8，让上升感更克制、高级
+        let targetSpeed = (typeof isHolding !== 'undefined' && isHolding) ? 8 : 1;
         
-        // 缓动算法：让加速和减速都有平滑的过渡，避免生硬切换
-        globalSpeedMultiplier += (targetSpeed - globalSpeedMultiplier) * 0.1;
+        // 💡 调整 2：缓动系数从 0.1 降到 0.05，让加速和减速的过程变得更平滑、更舒缓
+        globalSpeedMultiplier += (targetSpeed - globalSpeedMultiplier) * 0.05;
 
         for(let i = 0; i < bgParticles.length; i++) {
             let p = bgParticles[i];
             
             // 计算当前帧的真实速度
             let currentVy = p.vy * globalSpeedMultiplier;
-            // 加速上涌时，减弱左右摇摆，让光斑笔直冲向云霄
-            let currentVx = globalSpeedMultiplier > 2 ? p.vx * 0.2 : p.vx;
+            // 速度加快时，稍微保留一点左右摇摆，看起来更自然
+            let currentVx = globalSpeedMultiplier > 2 ? p.vx * 0.4 : p.vx;
             
             p.x += currentVx; 
             p.y += currentVy;
             
-            // 交互增强：按住时，粒子的呼吸上限亮度和闪烁频率变高，显得能量更强
-            let maxAlpha = globalSpeedMultiplier > 2 ? 0.9 : 0.6;
-            p.alpha += p.alphaChange * (globalSpeedMultiplier > 2 ? 2.5 : 1);
+            // 按住时亮度调整得更柔和一些
+            let maxAlpha = globalSpeedMultiplier > 2 ? 0.75 : 0.6;
+            p.alpha += p.alphaChange * (globalSpeedMultiplier > 2 ? 1.5 : 1);
             
             if(p.alpha <= 0.05) {
                 p.alpha = 0.05;
@@ -1335,27 +1348,25 @@
                 p.alphaChange = -Math.abs(p.alphaChange);
             }
             
-            // 如果光斑飘出了屏幕顶部，让它从底部无缝重新出现
+            // 越界重置
             if(p.y < -20) {
                 p.y = bgH + 20;
                 p.x = Math.random() * bgW;
-                p.alpha = 0; // 重生时全透明，平滑滑入
+                p.alpha = 0; 
             }
             if(p.x < -10) p.x = bgW + 10;
             if(p.x > bgW + 10) p.x = -10;
             
-            // 💡 视觉进阶：速度极快时，将圆点拉长变成“光梭（动态模糊特效）”
+            // 💡 调整 3：拉长线条的阈值相应降低，尾巴稍微缩短，更符合较慢的速度
             bgCtx.beginPath(); 
-            if (globalSpeedMultiplier > 3) {
+            if (globalSpeedMultiplier > 2.5) {
                 bgCtx.moveTo(p.x, p.y);
-                // 根据当前向上的速度拉长尾巴
-                bgCtx.lineTo(p.x, p.y - currentVy * 1.5);
+                bgCtx.lineTo(p.x, p.y - currentVy * 1.2); // 尾巴长度系数从 1.5 降到 1.2
                 bgCtx.strokeStyle = `rgba(${p.color}, ${p.alpha})`;
                 bgCtx.lineWidth = p.radius * 2;
                 bgCtx.lineCap = "round";
                 bgCtx.stroke();
             } else {
-                // 速度正常时，恢复为圆润的光斑
                 bgCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); 
                 bgCtx.fillStyle = `rgba(${p.color}, ${p.alpha})`; 
                 bgCtx.fill();

@@ -102,30 +102,39 @@
         flex-direction: column;
       }
       .header-section::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 77px; 
-            transform: translate(-50%, -50%);
-            width: 360px;  /* 💡 从 220px 扩大到 360px */
-            height: 360px; /* 💡 从 220px 扩大到 360px */
-            /* 💡 加大了 100% 纯白核心区的比例(45%)，确保覆盖整个 115x175 的矩形边缘 */
-            background: radial-gradient(circle, rgba(255,255,255,1) 40%, rgba(255, 255, 255, 0.61) 45%, rgba(255, 255, 255, 0) 50%);
-            z-index: 0;
-            pointer-events: none;
-        }
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 77px;
+        transform: translate(-50%, -50%);
+        width: 360px; /* 💡 从 220px 扩大到 360px */
+        height: 360px; /* 💡 从 220px 扩大到 360px */
+        /* 💡 加大了 100% 纯白核心区的比例(45%)，确保覆盖整个 115x175 的矩形边缘 */
+        background: radial-gradient(
+          circle,
+          rgba(255, 255, 255, 1) 40%,
+          rgba(255, 255, 255, 0.61) 45%,
+          rgba(255, 255, 255, 0) 50%
+        );
+        z-index: 0;
+        pointer-events: none;
+      }
 
-        /* 2. 确保 .avatar-container 的遮罩依然保留，让它和圆形白光完美融合 */
-        .avatar-container {
-            width: 115px; 
-            height: 175px; 
-            background: transparent; 
-            position: relative;
-            flex-shrink: 0;
-            z-index: 1;
-            -webkit-mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
-            mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
-        }
+      /* 2. 确保 .avatar-container 的遮罩依然保留，让它和圆形白光完美融合 */
+      .avatar-container {
+        width: 115px;
+        height: 175px;
+        background: transparent;
+        position: relative;
+        flex-shrink: 0;
+        z-index: 1;
+        -webkit-mask-image: linear-gradient(
+          to bottom,
+          black 70%,
+          transparent 100%
+        );
+        mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
+      }
       /* --- 1. 顶部导航 --- */
       .top-nav {
         display: flex;
@@ -581,8 +590,122 @@
         /* 旋转动画缓动函数 */
         transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       }
+      /* ========================================== */
+      /* 🌟 智能滑动提示指示器 (悬浮呼吸箭头) */
+      /* ========================================== */
+      .scroll-indicator {
+        position: absolute;
+        bottom: 15px;
+        left: 50%;
+        margin-left: -16px; /* 居中校准 */
+        width: 32px;
+        height: 32px;
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #9b51e0; /* 采用主题紫色 */
+        box-shadow: 0 4px 12px rgba(155, 81, 224, 0.2);
+        opacity: 0; /* 默认隐藏 */
+        pointer-events: none; /* 💡 关键：禁止响应点击，不阻挡背后的内容交互 */
+        transition: opacity 0.4s ease;
+        z-index: 20;
+        animation: bounceScroll 1.5s cubic-bezier(0.28, 0.84, 0.42, 1) infinite;
+      }
+
+      /* 当 JS 判定需要显示时，会加上这个 class */
+      .scroll-indicator.visible {
+        opacity: 1;
+      }
+
+      /* 优雅的上下跳动动画 */
+      @keyframes bounceScroll {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(6px);
+        }
+      }
+      /* ========================================== */
+      /* 🌟 推荐问题标题栏固定 (吸顶 + 毛玻璃遮盖) */
+      /* ========================================== */
+      #recommend-content .section-title {
+        position: sticky;
+        top: 0; /* 吸附在滚动容器的最顶部 */
+        z-index: 20; /* 确保层级最高，不会被列表文字盖住 */
+
+        /* 微调上下间距，消除视觉缝隙 */
+        padding: 4px 0 10px 0;
+        margin: -4px 0 10px 0;
+
+        /* 💡 核心：半透明微拟态毛玻璃背景，完美盖住向上滑动的文字 */
+        background: rgba(250, 250, 255, 0.85);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+
+        /* 底部加一条极浅的紫色虚线，在列表滑动时增强层次感 */
+        border-bottom: 1px dashed rgba(155, 81, 224, 0.15);
+      }
+      /* ========================================== */
+      /* 🗺️ 聊天气泡内嵌地图与列表专属样式 */
+      /* ========================================== */
+      .chat-map-container {
+        width: 100%;
+        height: 180px;
+        border-radius: 12px;
+        margin-top: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        border: 1px solid rgba(155, 81, 224, 0.2);
+        overflow: hidden;
+        position: relative;
+        z-index: 1; /* 防止高德地图组件层级溢出盖住 UI */
+      }
+
+      .poi-list-item {
+        background: linear-gradient(
+          90deg,
+          rgba(155, 81, 224, 0.05) 0%,
+          rgba(74, 144, 226, 0.02) 100%
+        );
+        border-radius: 8px;
+        padding: 8px 10px;
+        margin-bottom: 6px;
+        border-left: 3px solid rgba(155, 81, 224, 0.5);
+        font-size: 12.5px;
+        color: #444;
+        line-height: 1.4;
+      }
+      .poi-list-item strong {
+        color: #9b51e0;
+        font-size: 13px;
+      }
+     /* ========================================== */
+      /* 🛑 打断按钮专属呼吸灯动画 (科技海蓝色) */
+      /* ========================================== */
+      @keyframes pulseStop {
+          0% { box-shadow: 0 0 0 0 rgba(74, 144, 226, 0.4); }
+          70% { box-shadow: 0 0 0 12px rgba(74, 144, 226, 0); }
+          100% { box-shadow: 0 0 0 0 rgba(74, 144, 226, 0); }
+      }
+      .stopping-pulse {
+          animation: pulseStop 2s infinite;
+      }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script type="text/javascript">
+      window._AMapSecurityConfig = {
+        securityJsCode: "13a21ba9e894eadb7b49fcad06da007d",
+      };
+    </script>
+    <script
+      type="text/javascript"
+      src="https://webapi.amap.com/maps?v=2.0&key=e05953ee18648164f70932948932c4b2"
+    ></script>
   </head>
   <body>
     <canvas id="global-bg-canvas"></canvas>
@@ -671,7 +794,7 @@
           />
           <video
             id="thinking-video"
-            src="https://ai-avatar-wwl.oss-cn-beijing.aliyuncs.com/sikao.mp4"
+            src="https://ai-avatar-wwl.oss-cn-beijing.aliyuncs.com/sikao1.mp4"
             loop
             muted
             playsinline
@@ -706,6 +829,20 @@
         <div id="chat-content">
           <div class="status-badge" id="status">小智已准备好，请随时提问</div>
           <div class="message-content" id="message">期待与您的对话...</div>
+        </div>
+        <div class="scroll-indicator" id="scroll-indicator">
+          <svg
+            viewBox="0 0 24 24"
+            width="18"
+            height="18"
+            stroke="currentColor"
+            stroke-width="2"
+            fill="none"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
         </div>
       </div>
 
@@ -753,6 +890,10 @@
             ></path>
             <line x1="12" y1="19" x2="12" y2="23"></line>
             <line x1="8" y1="23" x2="16" y2="23"></line>
+          </svg>
+          <!-- 🌟 新增：代表“打断/停止”的方形图标 -->
+          <svg id="mic-icon-stop" style="display: none" viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="7" y="7" width="10" height="10" rx="2" ry="2"></rect>
           </svg>
         </div>
       </div>
@@ -1074,7 +1215,48 @@
       let isCanceling = false;
       let startY = 0;
       const CANCEL_THRESHOLD = 50;
+      let currentAbortController = null; // 🌟 新增：全局请求中断控制器
 
+      // ==========================================
+      // 🛑 核心机制：全局 AI 打断机制 (瞬间掐断当前所有进程)
+      // ==========================================
+      function interruptAITask() {
+        // 1. 终止 DeepSeek 或 语音生成的 Fetch 网络请求
+        if (currentAbortController) {
+          currentAbortController.abort();
+          currentAbortController = null;
+        }
+
+        // 2. 掐断音频播放
+        if (activeAudioPlayer) {
+          activeAudioPlayer.pause();
+          activeAudioPlayer.currentTime = 0;
+          activeAudioPlayer = null;
+        }
+
+        // 3. 重置状态
+        isAITalking = false;
+        isAIThinking = false;
+
+        // 4. 头像与特效归位
+        switchAvatarState("idle");
+        stopVisualizer();
+        enableMicUI();
+
+        // 5. 改变界面文字反馈
+        statusEl.innerText = "已中断，您可以重新提问";
+        const generatingWrapper = document.querySelector(
+          ".ai-generating-wrapper",
+        );
+        if (generatingWrapper) {
+          generatingWrapper.innerHTML = `<span style="color:#ff4d4f; font-size: 13px; font-weight: normal;">🚫 已取消生成</span>`;
+        } else if (messageEl.innerHTML.includes("小智：")) {
+          messageEl.innerHTML += `<div style="color:#ff4d4f; font-size: 12px; margin-top: 8px;">🚫 语音已被您打断</div>`;
+        }
+
+        // 6. 播放取消音效作为触觉反馈
+        safePlay(cancelSound);
+      }
       // ==========================================
       // 🤖 丝滑状态切换引擎 (修复手机端硬件解码白屏)
       // ==========================================
@@ -1256,23 +1438,39 @@
         if (activeAudioPlayer) activeAudioPlayer.muted = isGlobalMuted;
       });
 
-      function disableMicUI(reasonText) {
-        micBtn.style.opacity = "0.5";
-        // 隐藏正常图标，显示禁用图标
-        document.getElementById("mic-icon-active").style.display = "none";
-        document.getElementById("mic-icon-disabled").style.display = "block";
+    function disableMicUI(reasonText) {
+        micBtn.style.opacity = "1";
+        
+        // 💡 变成“停止”按钮样式：使用清爽冷静的科技蓝玻璃拟态渐变
+        micBtn.style.background = "linear-gradient(135deg, rgba(74, 144, 226, 0.15), rgba(74, 144, 226, 0.05))";
+        micBtn.style.borderColor = "rgba(74, 144, 226, 0.4)";
+        micBtn.style.color = "#4a90e2"; // 图标变为海蓝色
+        micBtn.style.boxShadow = "0 8px 25px rgba(74, 144, 226, 0.25)";
+        micBtn.classList.add('stopping-pulse'); // 🌟 触发蓝色的呼吸灯动画
 
-        hintText.innerText = reasonText;
-        hintText.style.color = "#888";
+        document.getElementById("mic-icon-active").style.display = "none";
+        document.getElementById("mic-icon-disabled").style.display = "none";
+        if (document.getElementById("mic-icon-stop")) document.getElementById("mic-icon-stop").style.display = "block";
+
+        hintText.innerText = "点击此处打断并重新提问";
+        hintText.style.color = "#4a90e2"; // 底部提示文字也改为蓝色
       }
 
       function enableMicUI() {
         isAITalking = false;
         isAIThinking = false;
         micBtn.style.opacity = "1";
-        // 恢复正常图标，隐藏禁用图标
+        
+        // 💡 恢复紫色的“麦克风”默认样式
+        micBtn.style.background = "rgba(255, 255, 255, 0.6)";
+        micBtn.style.borderColor = "rgba(255, 255, 255, 1)";
+        micBtn.style.color = "#9b51e0";
+        micBtn.style.boxShadow = "0 8px 25px rgba(155, 81, 224, 0.2)";
+        micBtn.classList.remove('stopping-pulse'); // 🌟 移除呼吸灯动画
+
         document.getElementById("mic-icon-active").style.display = "block";
         document.getElementById("mic-icon-disabled").style.display = "none";
+        if (document.getElementById("mic-icon-stop")) document.getElementById("mic-icon-stop").style.display = "none";
 
         if (!isRecording && !isHolding) {
           hintText.innerText = "按住说话，上划取消";
@@ -1283,6 +1481,7 @@
       function switchToChat() {
         recommendContent.style.display = "none";
         chatContent.style.display = "flex";
+        if (window.resetScrollIndicator) window.resetScrollIndicator(); // 🌟 每次切到聊天重置
       }
 
       // --- 语音识别事件 ---
@@ -1323,9 +1522,9 @@
       // --- 触控事件 (加入震动与音效) ---
       const handleInputStart = (e) => {
         if (isAITalking || isAIThinking) {
-          hintText.innerText = isAITalking
-            ? "小智正在讲话..."
-            : "小智正在思考...";
+          // 🌟 核心升级：如果 AI 正在干活，点击按钮不再是“干瞪眼”，而是直接将其打断！
+          e.preventDefault();
+          interruptAITask();
           return;
         }
         e.preventDefault();
@@ -1611,53 +1810,274 @@
         waveSpacer.style.display = "block";
       }
       // ==========================================
-      // 🧠 接口交互
-      // ==========================================
-      // ==========================================
-      // 🧠 接口交互 (优化同步与人设)
-      // ==========================================
-      // ==========================================
-      // 🧠 接口交互 (优化同步与人设)
+      // 🧠 接口交互 (AI Agent 终极版：接收云端指令)
       // ==========================================
       async function callDeepSeek(text) {
         try {
-          // 【优化】采用高级的星芒图标 + 流光文字效果，并美化用户的提问排版
           messageEl.innerHTML = `
                 <div class="user-text-style"><strong>🧑 你：</strong>${text}</div>
                 <div class="ai-generating-wrapper">
                     <svg class="ai-sparkle-icon" viewBox="0 0 24 24" width="18" height="18" fill="url(#sparkle-grad)">
-                        <defs>
-                            <linearGradient id="sparkle-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stop-color="#9b51e0" />
-                                <stop offset="100%" stop-color="#4a90e2" />
-                            </linearGradient>
-                        </defs>
+                        <defs><linearGradient id="sparkle-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#9b51e0" /><stop offset="100%" stop-color="#4a90e2" /></linearGradient></defs>
                         <path d="M12 2L14.4 9.6L22 12L14.4 14.4L12 22L9.6 14.4L2 12L9.6 9.6L12 2Z"></path>
                     </svg>
-                    小智正在极速检索知识库...
+                    小智正在极速检索...
                 </div>
             `;
+          statusEl.innerText = "正在分析您的意图";
 
-          statusEl.innerText = "正在为您检索信息";
+          currentAbortController = new AbortController();
+          const signal = currentAbortController.signal;
 
+          // 🚀 前端彻底放弃复杂的正则拦截，直接向配置了 Tool 的大模型发问！
           const dsResponse = await fetch(
             "https://ojr9d97ks4.sealosbja.site/chat",
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ text: text }),
+              signal: signal,
             },
           );
           const data = await dsResponse.json();
-          const aiReply = data.reply;
 
-          generateTalkingHeadVideo(text, aiReply);
+          // 🌟 如果大模型发现这是地图需求，并返回了工具指令，前端立刻执行！
+          if (data.is_tool) {
+            if (data.action === "search") {
+              // 大模型已经帮我们把“我肚子饿了”翻译成了 keyword="美食"，直接调用！
+              handleLocalPOISearch(data.target, text);
+            } else if (data.action === "navigate") {
+              // 大模型已经把“带我去移通合川”翻译成了 destination="重庆移通学院合川校区"
+              handleLocalNavigation(data.target, text);
+            }
+            return; // 🛑 拦截成功，立刻打断，不需要去生成长篇大论的语音和视频！
+          }
+
+          // 💬 如果没有工具指令，说明是普通问题，正常播放视频和语音
+          generateTalkingHeadVideo(text, data.reply);
         } catch (error) {
+          if (error.name === "AbortError") return; // 用户主动打断，静默退出
+
           statusEl.innerText = "网络似乎有点小情绪";
           enableMicUI();
           switchAvatarState("idle");
           messageEl.innerHTML = `<div class="user-text-style"><strong>🧑 你：</strong>${text}</div><br><strong>小智：</strong>网络好像开小差了，请稍后再试一次吧。`;
         }
+      }
+
+      // ==========================================
+      // 📍 高德地图核心引擎：周边 POI 搜索与微地图渲染
+      // ==========================================
+      function handleLocalPOISearch(keyword, userText) {
+        statusEl.innerText = `正在为您搜索周边的 [${keyword}]...`;
+
+        AMap.plugin(["AMap.PlaceSearch"], function () {
+          var placeSearch = new AMap.PlaceSearch({
+            type: "", // 可选，如 '餐饮服务'
+            pageSize: 3, // 只取距离最近的前 3 个
+            pageIndex: 1,
+            extensions: "base",
+          });
+          if (!isAIThinking && !isAITalking) return; // 🌟 发现已经被用户打断了，直接丢弃高德的回调结果
+          // 以用户当前坐标为圆心，搜索 2000 米范围
+          placeSearch.searchNearBy(
+            keyword,
+            [globalLng, globalLat],
+            2000,
+            function (status, result) {
+              if (status === "complete" && result.info === "OK") {
+                const pois = result.poiList.pois;
+
+                // 组装 UI 列表
+                let poiHtml = `<div class="ai-response-format">为您在附近找到以下 <strong>${keyword}</strong>：</div>`;
+                pois.forEach((poi) => {
+                  poiHtml += `
+                          <div class="poi-list-item">
+                              <strong>${poi.name}</strong> <span style="color:#888; font-size: 11px;">(距您 ${poi.distance} 米)</span><br>
+                              <span style="font-size: 11px; color: #777;">${poi.address}</span>
+                          </div>`;
+                });
+
+                // 给活地图预留一个独一无二的 div ID
+                const mapId = "map-poi-" + Date.now();
+                poiHtml += `<div id="${mapId}" class="chat-map-container"></div>`;
+
+                // 渲染进聊天气泡
+                messageEl.innerHTML = `<strong>你：</strong>${userText}<br><br><strong>小智：</strong>${poiHtml}`;
+                if (window.resetScrollIndicator) window.resetScrollIndicator();
+                statusEl.innerText = "小智已为您标注在下方地图中";
+
+                // ✨ 瞬间生成高德微型地图
+                setTimeout(() => {
+                  var map = new AMap.Map(mapId, {
+                    zoom: 15,
+                    center: [globalLng, globalLat],
+                  });
+
+                  // 标出用户自己的位置（红色小人/蓝点）
+                  new AMap.Marker({
+                    position: [globalLng, globalLat],
+                    map: map,
+                    icon: "https://webapi.amap.com/theme/v1.3/markers/n/mark_r.png",
+                  });
+
+                  // 标出搜索出来的结果点（蓝色水滴）
+                  pois.forEach((poi) => {
+                    new AMap.Marker({
+                      position: poi.location,
+                      map: map,
+                      title: poi.name,
+                      icon: "https://webapi.amap.com/theme/v1.3/markers/n/mark_b.png",
+                    });
+                  });
+                }, 200);
+
+                // 语音与数字人状态归位
+                switchAvatarState("idle");
+                stopVisualizer();
+                enableMicUI();
+              } else {
+                // 没搜到东西的兜底
+                messageEl.innerHTML = `<strong>你：</strong>${userText}<br><br><strong>小智：</strong>抱歉，在您附近 2000 米内没有找到合适的“${keyword}”哦。`;
+                statusEl.innerText = "未能找到相关地点";
+                switchAvatarState("idle");
+                stopVisualizer();
+                enableMicUI();
+              }
+            },
+          );
+        });
+      }
+
+      // ==========================================
+      // 🗺️ 高德地图核心引擎：双引擎智能动态导航 (完美修复地名解析失败问题)
+      // ==========================================
+      function handleLocalNavigation(destination, userText) {
+        statusEl.innerText = `正在定位 [${destination}] 的准确坐标...`;
+
+        // 💡 引入 PlaceSearch(地名解析引擎), 以及步行、驾车引擎
+        AMap.plugin(
+          ["AMap.PlaceSearch", "AMap.Walking", "AMap.Driving"],
+          function () {
+            // 🌟 第 1 步：先将用户口语化的“地名”解析为“精准经纬度”
+            var placeSearch = new AMap.PlaceSearch({
+              city: "全国", // 全局搜索，防止跨市搜不到
+              pageSize: 1,
+              pageIndex: 1,
+            });
+
+            placeSearch.search(destination, function (status, result) {
+              // 如果全中国都找不到这个地方
+              if (
+                status !== "complete" ||
+                result.info !== "OK" ||
+                !result.poiList ||
+                result.poiList.pois.length === 0
+              ) {
+                messageEl.innerHTML = `<strong>你：</strong>${userText}<br><br><strong>小智：</strong>抱歉，小智未能检索到“${destination}”的具体位置，请尝试说出更完整的地名哦。`;
+                statusEl.innerText = "找不到该地点";
+                switchAvatarState("idle");
+                stopVisualizer();
+                enableMicUI();
+                return;
+              }
+
+              // 解析成功，拿到目的地的精准经纬度和高德官方标准名称
+              let destPoi = result.poiList.pois[0];
+              let destLngLat = [destPoi.location.lng, destPoi.location.lat];
+              let destName = destPoi.name;
+
+              // 🌟 第 2 步：拿到坐标后，开始在气泡中画地图
+              const mapId = "map-nav-" + Date.now();
+              const navHtml = `
+                  <div class="ai-response-format" id="nav-text-${mapId}">正在为您规划去 <strong>${destName}</strong> 的最优路线：</div>
+                  <div id="${mapId}" class="chat-map-container"></div>`;
+
+              messageEl.innerHTML = `<strong>你：</strong>${userText}<br><br><strong>小智：</strong>${navHtml}`;
+              if (window.resetScrollIndicator) window.resetScrollIndicator();
+
+              setTimeout(() => {
+                var map = new AMap.Map(mapId, {
+                  zoom: 15,
+                  center: [globalLng, globalLat],
+                });
+                var walking = new AMap.Walking({ map: map });
+                const navTextEl = document.getElementById(`nav-text-${mapId}`);
+                if (!isAIThinking && !isAITalking) return; // 🌟 发现已经被用户打断了，直接丢弃高德的回调结果
+                // 🌟 第 3 步：起点和终点【强制使用双端经纬度】进行步行规划，彻底解决报错
+                walking.search(
+                  [globalLng, globalLat],
+                  destLngLat,
+                  function (wStatus, wResult) {
+                    let needDriving = false;
+
+                    if (
+                      wStatus === "complete" &&
+                      wResult.routes &&
+                      wResult.routes.length > 0
+                    ) {
+                      let distanceMeter = wResult.routes[0].distance;
+                      if (distanceMeter > 3000) {
+                        needDriving = true;
+                        walking.clear();
+                      } else {
+                        let timeMinutes = Math.round(
+                          wResult.routes[0].time / 60,
+                        );
+                        statusEl.innerText = `路线规划完成：步行约 ${distanceMeter} 米`;
+                        navTextEl.innerHTML = `距离很近，为您推荐 <strong>🚶‍♂️步行</strong> 路线，约 ${distanceMeter} 米，需 ${timeMinutes} 分钟：`;
+                        switchAvatarState("idle");
+                        stopVisualizer();
+                        enableMicUI();
+                      }
+                    } else {
+                      needDriving = true;
+                      walking.clear();
+                    }
+
+                    // 🌟 第 4 步：如果大于3公里、跨越江河或跨城市，无缝切换驾车引擎
+                    if (needDriving) {
+                      statusEl.innerText = `距离较远，正在为您切换为驾车路线...`;
+                      var driving = new AMap.Driving({ map: map });
+
+                      // 同样使用精确经纬度规划
+                      driving.search(
+                        [globalLng, globalLat],
+                        destLngLat,
+                        function (dStatus, dResult) {
+                          if (
+                            dStatus === "complete" &&
+                            dResult.routes &&
+                            dResult.routes.length > 0
+                          ) {
+                            let timeMinutes = Math.round(
+                              dResult.routes[0].time / 60,
+                            );
+                            let distanceMeter = dResult.routes[0].distance;
+                            let distanceText =
+                              distanceMeter > 1000
+                                ? (distanceMeter / 1000).toFixed(1) + " 公里"
+                                : distanceMeter + " 米";
+
+                            map.setZoom(11); // 路线长，视野拉大
+                            statusEl.innerText = `路线规划完成：驾车约 ${distanceText}`;
+                            navTextEl.innerHTML = `距离较远，为您推荐 <strong>🚗驾车/打车</strong> 路线，约 ${distanceText}，需 ${timeMinutes} 分钟：`;
+                          } else {
+                            statusEl.innerText = `抱歉，小智未能找到前往 ${destName} 的路线`;
+                            navTextEl.innerHTML = `抱歉，跨度太大或无法通行，小智未能规划出前往 <strong>${destName}</strong> 的有效路线。`;
+                          }
+                          switchAvatarState("idle");
+                          stopVisualizer();
+                          enableMicUI();
+                        },
+                      );
+                    }
+                  },
+                );
+              }, 200);
+            });
+          },
+        );
       }
 
       // ==========================================
@@ -1667,12 +2087,16 @@
         try {
           statusEl.innerText = "正在努力组织语言";
 
+          currentAbortController = new AbortController();
+          const signal = currentAbortController.signal;
+
           const generateRes = await fetch(
             "https://ojr9d97ks4.sealosbja.site/generate",
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ text: aiReply }),
+              signal: signal,
             },
           );
           const generateData = await generateRes.json();
@@ -1696,7 +2120,7 @@
               ? marked.parse(aiReply)
               : aiReply.replace(/\n/g, "<br>");
           messageEl.innerHTML = `<strong>你：</strong>${userText}<br><br><strong>小智：</strong><div class="ai-response-format">${formattedHTML}</div>`;
-
+          if (window.resetScrollIndicator) window.resetScrollIndicator(); // 🌟 AI长文本渲染完毕，重置指示器
           statusEl.innerText = "为您找到以下答案";
           isAIThinking = false;
           disableMicUI("小智正在讲话...");
@@ -1727,6 +2151,8 @@
             enableMicUI();
           };
         } catch (error) {
+          if (error.name === "AbortError") return; // 🌟 被打断时静默退出
+
           activeAudioPlayer = null;
           statusEl.innerText = "声音加载遇到了点问题";
           stopVisualizer();
@@ -1741,47 +2167,25 @@
         }
       }
       // ==========================================
-      // ⛅ 天气模块 (终极优化版：国内极速接口)
+      // ⛅ 全局环境状态管理
       // ==========================================
       const weatherEl = document.querySelector(".weather-info");
 
-      function getWeatherDesc(code) {
-        if (code === 0) return "晴 ☀️";
-        if (code === 1 || code === 2) return "多云 ⛅";
-        if (code === 3) return "阴 ☁️";
-        if (code >= 45 && code <= 48) return "雾 🌫️";
-        if (code >= 51 && code <= 67) return "雨 🌧️";
-        if (code >= 71 && code <= 77) return "雪 ❄️";
-        if (code >= 80 && code <= 82) return "阵雨 🌦️";
-        if (code >= 95) return "雷暴 ⛈️";
-        return "天气";
-      }
-
+      // 🌟 核心修复：必须在全局声明这些变量，否则问候语引擎会直接报错崩溃！
+      let globalLocationTip = "";
+      let globalTemp = undefined;
+      let globalCode = undefined;
+      let globalWeatherReady = false;
+      let globalLng = 108.384666;
+      let globalLat = 30.796417;
       // ==========================================
-      // ⛅ 天气模块 (精准逆地理编码 + 移动端高精度优化)
+      // ⛅ 高德定位 + 天气引擎 (融合电子围栏)
       // ==========================================
-
-      function getWeatherDesc(code) {
-        if (code === 0) return "晴 ☀️";
-        if (code === 1 || code === 2) return "多云 ⛅";
-        if (code === 3) return "阴 ☁️";
-        if (code >= 45 && code <= 48) return "雾 🌫️";
-        if (code >= 51 && code <= 67) return "雨 🌧️";
-        if (code >= 71 && code <= 77) return "雪 ❄️";
-        if (code >= 80 && code <= 82) return "阵雨 🌦️";
-        if (code >= 95) return "雷暴 ⛈️";
-        return "未知";
-      }
-      // 🌟 新增：页面一解析完，立刻渲染基础时间与节日，防止一片空白
-      updatePersonalizedGreeting();
-
-      // 原有的天气调用
-      fetchRealTimeWeather();
       async function fetchRealTimeWeather() {
         try {
-          weatherEl.innerText = "精准定位中...";
+          weatherEl.innerText = "高精度定位中...";
 
-          // 1. IP 城市兜底 (最快，但只到市级)
+          // 1. IP 兜底 (获取城市名)
           const getCity = async () => {
             return new Promise((resolve) => {
               const script = document.createElement("script");
@@ -1796,94 +2200,169 @@
               setTimeout(() => resolve("重庆"), 2000);
             });
           };
-
           const fallbackCity = await getCity();
 
-          // 2. 发起高精度 GPS 定位 (需要 HTTPS 支持)
-          navigator.geolocation.getCurrentPosition(
-            async (position) => {
-              const lat = position.coords.latitude;
-              const lon = position.coords.longitude;
+          // 2. 同时召唤 高德定位 和 高德天气 插件
+          AMap.plugin(["AMap.Geolocation", "AMap.Weather"], function () {
+            var geolocation = new AMap.Geolocation({
+              enableHighAccuracy: true,
+              timeout: 8000,
+              maximumAge: 60000,
+              convert: true,
+              needAddress: true,
+            });
 
-              try {
-                // 🌟 新增：使用开源免费的 OSM 接口，将经纬度转换为精确的区/县/街道名称
-                const geoRes = await fetch(
-                  `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&accept-language=zh-CN`,
-                );
-                const geoData = await geoRes.json();
+            geolocation.getCurrentPosition(function (status, result) {
+              if (status === "complete") {
+                // --- 🌟 1. 高德定位成功 ---
+                const lat = result.position.lat;
+                const lon = result.position.lng;
+                globalLng = lon;
+                globalLat = lat;
+                const ad = result.addressComponent;
+                const district = ad.district || "";
+                const township = ad.township || "";
 
-                // 智能提取地址：优先拿 区/县(suburb) 或 镇(town)，没有再拿 城市(city)
+                // 🌟🌟 新增：校园电子围栏 (场景化问候)
+                // 你可以用高德坐标拾取器(https://lbs.amap.com/tools/picker)换成你们学校真实的经纬度
+                // 🌟🌟 新增：校园电子围栏 (场景化问候)
+                const campusPOIs = [
+                  {
+                    name: "巴南实训基地",
+                    lng: 106.699251,
+                    lat: 29.408053,
+                    radius: 500,
+                    icon: "🏫", // 💡 添加实训基地专属图标 (学校)
+                    msg: "欢迎来到巴南实训基地！实践出真知，祝你今天学习顺利。",
+                  },
+                  {
+                    name: "图书馆",
+                    lng: 108.450033,
+                    lat: 30.756368,
+                    radius: 30,
+                    icon: "📖", // 💡 添加图书馆专属图标 (书本)
+                    msg: "检测到您在图书馆附近，愿你在知识的海洋里遨游，保持安静哦。",
+                  },
+                  {
+                    name: "实训机房",
+                    lng: 108.451867,
+                    lat: 30.757271,
+                    radius: 30,
+                    icon: "💻", // 💡 添加机房专属图标 (电脑)
+                    msg: "您好像在实训机房附近，请注意用电安全，规范使用设备哦！",
+                  },
+                ];
+
+                globalLocationTip = "";
+                globalLocationIcon = "📍"; // 重置为默认图标
+                // ==========================================
+                // ⛅ 全局环境状态管理
+                // ==========================================
+                const weatherEl = document.querySelector(".weather-info");
+
+                globalLocationTip = "";
+                globalLocationIcon = "📍"; // 重置为默认图标
+
+                for (let poi of campusPOIs) {
+                  // 调用高德原生算法，计算当前坐标与预设目标点的直线距离 (单位:米)
+                  const distance = Math.round(
+                    AMap.GeometryUtil.distance([lon, lat], [poi.lng, poi.lat]),
+                  );
+                  if (distance <= poi.radius) {
+                    globalLocationTip = poi.msg;
+                    globalLocationIcon = poi.icon || "📍"; // 🌟 一旦进入围栏，同步获取专属图标
+                    break;
+                  }
+                }
+
                 let preciseLocation = fallbackCity;
-                if (geoData && geoData.address) {
-                  preciseLocation =
-                    geoData.address.suburb ||
-                    geoData.address.city_district ||
-                    geoData.address.town ||
-                    geoData.address.city ||
-                    fallbackCity;
-                  preciseLocation = preciseLocation.replace(/市$/, ""); // 清理后缀
+                if (district || township) {
+                  preciseLocation = `${district}${township}`;
+                  if (preciseLocation.length > 7)
+                    preciseLocation = preciseLocation.substring(0, 7) + "...";
+                } else {
+                  preciseLocation = (ad.city || fallbackCity).replace(
+                    /市$/,
+                    "",
+                  );
                 }
 
-                // 获取精确坐标的天气
-                const weatherRes = await fetch(
-                  `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=auto`,
-                );
-                const weatherData = await weatherRes.json();
-                const temp = Math.round(
-                  weatherData.current_weather.temperature,
-                );
-                const code = weatherData.current_weather.weathercode;
+                // --- 🌟 2. 高德天气极速查询 ---
+                var weather = new AMap.Weather();
+                // 直接用高德定位拿到的官方区域编码(adcode)去查天气，100%匹配
+                weather.getLive(ad.adcode, function (err, data) {
+                  if (!err) {
+                    const temp = data.temperature;
+                    const weatherDesc = data.weather; // 高德直接返回中文，如"晴", "小雨", "雷阵雨"
 
-                weatherEl.innerText = `${preciseLocation} ${temp}°C ${getWeatherDesc(code)}`;
-                const descEl = document.getElementById("greet-desc");
-                if (descEl) {
-                  descEl.style.transition = "opacity 0.25s ease-in-out";
-                  descEl.style.opacity = "0"; // 先淡出
-                  setTimeout(() => {
-                    updatePersonalizedGreeting(temp, code); // 偷偷换掉文字
-                    descEl.style.opacity = "1"; // 再淡入
-                  }, 250);
-                }
-              } catch (e) {
-                // 如果逆地理编码 API 失败，退回 IP 城市，但天气依旧用精确经纬度查
-                const weatherRes = await fetch(
-                  `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=auto`,
-                );
-                const weatherData = await weatherRes.json();
-                weatherEl.innerText = `${fallbackCity} ${Math.round(weatherData.current_weather.temperature)}°C ${getWeatherDesc(weatherData.current_weather.weathercode)}`;
-                const descEl = document.getElementById("greet-desc");
-                if (descEl) {
-                  descEl.style.transition = "opacity 0.25s ease-in-out";
-                  descEl.style.opacity = "0";
-                  setTimeout(() => {
-                    updatePersonalizedGreeting(tempFallback, codeFallback);
-                    descEl.style.opacity = "1";
-                  }, 250);
-                }
+                    weatherEl.innerText = `${preciseLocation} ${temp}°C ${weatherDesc}`;
+
+                    // 🌟 同步给全局变量 (供刚进页面的欢迎语音使用)
+                    globalTemp = temp;
+                    globalCode = weatherDesc; // 注意：这里存的变成了中文
+                    globalWeatherReady = true;
+
+                    // 更新气泡卡片
+                    const descEl = document.getElementById("greet-desc");
+                    if (descEl) {
+                      descEl.style.transition = "opacity 0.25s ease-in-out";
+                      descEl.style.opacity = "0";
+                      setTimeout(() => {
+                        updatePersonalizedGreeting(temp, weatherDesc);
+                        descEl.style.opacity = "1";
+                      }, 250);
+                    }
+                  }
+                });
+              } else {
+                // --- ❌ 定位失败，走高德天气城市兜底 ---
+                console.warn("定位失败", result.message);
+
+                // 🌟 修复 2：增加页面底部的提示，让用户明白为何定位没有更新
+                statusEl.innerText = "未获取到精确位置，已使用万州校区默认坐标";
+                setTimeout(() => {
+                  statusEl.innerText = "小智已准备好，请随时提问";
+                }, 4500);
+
+                var weather = new AMap.Weather();
+                weather.getLive(fallbackCity, function (err, data) {
+                  // ... 这里的查天气代码保持不变 ...
+                  if (!err) {
+                    const temp = data.temperature;
+                    const weatherDesc = data.weather;
+                    weatherEl.innerText = `${fallbackCity} ${temp}°C ${weatherDesc}`;
+
+                    globalTemp = temp;
+                    globalCode = weatherDesc;
+                    globalWeatherReady = true;
+
+                    const descEl = document.getElementById("greet-desc");
+                    if (descEl) {
+                      descEl.style.opacity = "0";
+                      setTimeout(() => {
+                        updatePersonalizedGreeting(temp, weatherDesc);
+                        descEl.style.opacity = "1";
+                      }, 250);
+                    }
+                  }
+                });
               }
-            },
-            async (error) => {
-              console.warn("高精度定位失败或被拒绝:", error.message);
-              // 拒绝定位或失败时，使用 IP 城市和默认坐标兜底
-              const weatherRes = await fetch(
-                `https://api.open-meteo.com/v1/forecast?latitude=29.53&longitude=106.55&current_weather=true&timezone=auto`,
-              );
-              const weatherData = await weatherRes.json();
-              weatherEl.innerText = `${fallbackCity} ${Math.round(weatherData.current_weather.temperature)}°C ${getWeatherDesc(weatherData.current_weather.weathercode)}`;
-            },
-            {
-              // 🌟 核心参数优化：针对手机端
-              enableHighAccuracy: true, // 强制调用手机 GPS 芯片，而非仅依赖网络
-              timeout: 10000, // 给手机 10 秒时间搜星，3 秒绝对不够
-              maximumAge: 60000, // 允许使用 1 分钟内的定位缓存，加快速度
-            },
-          );
+            });
+          });
         } catch (e) {
-          weatherEl.innerText = "天气服务暂歇";
+          weatherEl.innerText = "服务加载失败";
         }
       }
 
+      // 🌟 核心修复：使用 setTimeout 保证函数加载完毕后再执行首次渲染
+      setTimeout(() => updatePersonalizedGreeting(), 0);
+
+      // 启动高德定位与天气抓取
       fetchRealTimeWeather();
+
+      // ==========================================
+      // 🌌 3. 常驻环境背景 (交互增强版：按住加速光梭)
+      // ==========================================
       // ==========================================
       // 🌌 3. 常驻环境背景 (交互增强版：按住加速光梭)
       // ==========================================
@@ -1993,18 +2472,46 @@
         // 1. 格式化日期 MM-DD 用于匹配节日
         const dateStr = `${month.toString().padStart(2, "0")}-${date.toString().padStart(2, "0")}`;
 
-        // 2. 时间段问候 (修改标题)
+       // 2. 🌟 时间段问候 (6大场景统一风格、自然色彩过渡的 SVG 图标引擎)
         let timeGreeting = "嗨";
-        if (hour >= 5 && hour < 9) timeGreeting = "早上好";
-        else if (hour >= 9 && hour < 12) timeGreeting = "上午好";
-        else if (hour >= 12 && hour < 14) timeGreeting = "中午好";
-        else if (hour >= 14 && hour < 18) timeGreeting = "下午好";
-        else if (hour >= 18 && hour < 23) timeGreeting = "晚上好";
-        else timeGreeting = "夜深了";
+        let timeIcon = "";
 
-        if (titleEl)
-          titleEl.innerHTML = `👋 ${timeGreeting}，我是<span class="highlight-name">小智</span>`;
+        // 统一尺寸与绝对居中对齐样式 (18x18完美契合文字)
+        const iconStyle = 'width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; flex-shrink: 0;"';
 
+        // 🌅 早上 (5:00-8:59) - 晨光破晓 (暖橘色 -> 桃粉色)
+        const svgMorning = `<svg ${iconStyle} stroke="url(#m-grad)"><defs><linearGradient id="m-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FF7E5F"/><stop offset="100%" stop-color="#FEB47B"/></linearGradient></defs><path d="M17 18a5 5 0 0 0-10 0"></path><line x1="12" y1="2" x2="12" y2="9"></line><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"></line><line x1="1" y1="18" x2="3" y2="18"></line><line x1="21" y1="18" x2="23" y2="18"></line><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"></line><line x1="23" y1="22" x2="1" y2="22"></line><polyline points="8 6 12 2 16 6"></polyline></svg>`;
+        
+        // 🌤️ 上午 (9:00-11:59) - 朝气蓬勃 (明黄色 -> 亮橙色)
+        const svgForenoon = `<svg ${iconStyle} stroke="url(#fn-grad)"><defs><linearGradient id="fn-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FFD200"/><stop offset="100%" stop-color="#F7971E"/></linearGradient></defs><path d="M12 2v2"></path><path d="M5 5l1.5 1.5"></path><path d="M2 12h2"></path><path d="M19 5l-1.5 1.5"></path><path d="M22 12h-2"></path><path d="M17.5 19H9a4 4 0 1 1 0-8h.5a5 5 0 1 1 9.5 3 2.5 2.5 0 1 1-1.5 5z"></path></svg>`;
+        
+        // ☀️ 中午 (12:00-13:59) - 烈日当空 (亮橙红 -> 金黄色)
+        const svgNoon = `<svg ${iconStyle} stroke="url(#noon-grad)"><defs><linearGradient id="noon-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FF512F"/><stop offset="100%" stop-color="#F09819"/></linearGradient></defs><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`;
+        
+        // ☕ 下午 (14:00-17:59) - 落日余晖/下午茶 (红橘色 -> 浅蜜桃)
+        const svgAfternoon = `<svg ${iconStyle} stroke="url(#af-grad)"><defs><linearGradient id="af-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FF0844"/><stop offset="100%" stop-color="#FFB199"/></linearGradient></defs><path d="M18 8h1a4 4 0 0 1 0 8h-1"></path><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path><line x1="6" y1="1" x2="6" y2="4"></line><line x1="10" y1="1" x2="10" y2="4"></line><line x1="14" y1="1" x2="14" y2="4"></line></svg>`;
+        
+        // 🌙 晚上 (18:00-22:59) - 华灯初上 (蓝紫色 -> 紫红色)
+        const svgEvening = `<svg ${iconStyle} stroke="url(#e-grad)"><defs><linearGradient id="e-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#667EEA"/><stop offset="100%" stop-color="#764BA2"/></linearGradient></defs><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>`;
+        
+        // 🌌 夜深了 (23:00-4:59) - 静谧深夜 (冷青色 -> 深靛蓝)
+        const svgLateNight = `<svg ${iconStyle} stroke="url(#ln-grad)"><defs><linearGradient id="ln-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#30CFD0"/><stop offset="100%" stop-color="#330867"/></linearGradient></defs><path d="M13 22H7a5 5 0 1 1 4.9-6H13a3 3 0 0 1 0 6z"></path><path d="M10.04 8.78A7 7 0 0 1 21 12.79 6 6 0 0 0 10.04 8.78z"></path></svg>`;
+
+        // 智能匹配时段图标
+        if (hour >= 5 && hour < 9) { timeGreeting = "早上好"; timeIcon = svgMorning; }
+        else if (hour >= 9 && hour < 12) { timeGreeting = "上午好"; timeIcon = svgForenoon; }
+        else if (hour >= 12 && hour < 14) { timeGreeting = "中午好"; timeIcon = svgNoon; }
+        else if (hour >= 14 && hour < 18) { timeGreeting = "下午好"; timeIcon = svgAfternoon; }
+        else if (hour >= 18 && hour < 23) { timeGreeting = "晚上好"; timeIcon = svgEvening; }
+        else { timeGreeting = "夜深了"; timeIcon = svgLateNight; }
+
+        if (titleEl) {
+            titleEl.style.display = 'flex';
+            titleEl.style.alignItems = 'center';
+            // 💡 严丝合缝的对齐优化：设置行高，并将文字包裹在 span 中确保绝对居中
+            titleEl.style.lineHeight = '1'; 
+            titleEl.innerHTML = `${timeIcon} <span>${timeGreeting}，我是<span class="highlight-name" style="margin-left:4px;">小智</span></span>`;
+        }
         // 3. 特殊节日与节气字典 (公历近似值)
         const specialDays = {
           "01-01": "元旦快乐！新的一年，小智陪你一起进步。✨",
@@ -2028,20 +2535,32 @@
           "12-31": "今天是今年的最后一天啦，准备好跨年了吗？🎉",
         };
 
-        let personalizedTip = "";
+       let personalizedTip = "";
+        let isLateNight = hour >= 23 || hour < 5;
 
-        // 💡 优先级 1：节日和节气
-        if (specialDays[dateStr]) {
-          personalizedTip = specialDays[dateStr];
+        // 💡 优先级 1：深夜温馨提示 (如果到了深夜，强制开启贴心关怀)
+        if (isLateNight) {
+            if (specialDays[dateStr]) {
+                // 如果恰好遇上跨年/圣诞节等节日的深夜，巧妙地融合在一起！
+                personalizedTip = specialDays[dateStr] + " 夜深了，注意身体早点休息哦。💤";
+            } else {
+                // 平凡的深夜
+                personalizedTip = "夜深了，学习再忙也要注意身体，记得早点休息哦。💤";
+            }
         }
-        // 💡 优先级 2：星期状态 (如果没有节日)
+        // 💡 优先级 2：节日和节气 (白天正常显示)
+        else if (specialDays[dateStr]) {
+            personalizedTip = specialDays[dateStr];
+        }
+        // 💡 优先级 3：星期状态 (日常状态兜底)
         else {
-          if (day === 1 && hour < 12)
-            personalizedTip = "新的一周开始啦，元气满满地冲鸭！💪";
-          else if (day === 5 && hour > 12)
-            personalizedTip = "马上就周末啦，坚持就是胜利！🍻";
-          else if (day === 0 || day === 6)
-            personalizedTip = "周末好时光，记得劳逸结合好好休息哦。☕";
+            if (day === 1 && hour < 12) {
+                personalizedTip = "新的一周开始啦，元气满满地冲鸭！💪";
+            } else if (day === 5 && hour > 12) {
+                personalizedTip = "马上就周末啦，坚持就是胜利！🍻";
+            } else if (day === 0 || day === 6) {
+                personalizedTip = "周末好时光，记得劳逸结合好好休息哦。☕";
+            }
         }
 
         // 💡 优先级 3：天气与温度提醒 (只在有对应情况时叠加)
@@ -2052,38 +2571,53 @@
             weatherTip = "今天气温较低，出门记得多穿点衣服。";
 
           // 天气代码: 51-67(雨), 71-77(雪), 80-82(阵雨), 95(雷暴)
-          if (
-            (weatherCode >= 51 && weatherCode <= 67) ||
-            (weatherCode >= 80 && weatherCode <= 82)
-          ) {
-            weatherTip = "外面在下雨，出门记得带把伞哦。☔";
-          } else if (weatherCode >= 71 && weatherCode <= 77) {
-            weatherTip = "下雪啦！注意保暖和出行安全。❄️";
+          // 💡 匹配高德的中文天气描述
+          // 💡 匹配高德的中文天气描述
+          if (typeof weatherCode === "string") {
+            if (weatherCode.includes("雨")) {
+              weatherTip = "外面在下雨，出门记得带把伞哦。☔";
+            } else if (weatherCode.includes("雪")) {
+              weatherTip = "下雪啦！注意保暖和出行安全。❄️";
+            }
           }
         }
 
-       // 组合最终文案 (UI 视觉终极版 - 镜像对称 + 像素级对齐)
-    
-    // 1. 顶部基础介绍 (新增淡蓝色、右置高亮卡片)
-    // 💡 270deg 渐变让颜色集中在右侧，与紫色的 90deg 相对称
-    let finalDesc = `<div style="background: linear-gradient(270deg, rgba(74, 144, 226, 0.08) 0%, rgba(74, 144, 226, 0.01) 100%); margin: 0 -10px ${ (personalizedTip || weatherTip) ? '10px' : '4px' } -10px; padding: 8px 7px 8px 10px; border-right: 3px solid rgba(74, 144, 226, 0.4); border-radius: 6px; color: #444; font-size: 12px; line-height: 1.5; font-weight: 400;">我是人工智能学院专属助手小智，你的AI学习与生活指南。</div>`;
-    
-    // 2. 个性化提示卡片 (淡紫色、左置高亮卡片)
-    if (personalizedTip || weatherTip) {
-        finalDesc += `<div style="background: linear-gradient(90deg, rgba(155, 81, 224, 0.08) 0%, rgba(74, 144, 226, 0.03) 100%); margin: 0 -10px 12px -10px; padding: 8px 10px 8px 7px; border-left: 3px solid rgba(155, 81, 224, 0.4); border-radius: 6px; display: flex; flex-direction: column; gap: 5px;">`;
-        
+        // 组合最终文案 (UI 视觉终极版 - 四段式动态智能排版)
+
+        // 💡 1. 统计当前激活的特殊提示数量
+        let tipCount = 0;
+        if (globalLocationTip) tipCount++;
+        if (personalizedTip) tipCount++;
+        if (weatherTip) tipCount++;
+
+        let finalDesc = "";
+
+        // 💡 2. 顶部基础介绍 (核心逻辑：当提示大于等于2条时隐藏，避免气泡过长)
+        if (tipCount < 2) {
+          let hasAnyTip = tipCount > 0;
+          finalDesc += `<div style="background: linear-gradient(270deg, rgba(74, 144, 226, 0.08) 0%, rgba(74, 144, 226, 0.01) 100%); margin: 0 -10px ${hasAnyTip ? "10px" : "4px"} -10px; padding: 8px 7px 8px 10px; border-right: 3px solid rgba(74, 144, 226, 0.4); border-radius: 6px; color: #444; font-size: 12px; line-height: 1.5; font-weight: 400;">我是人工智能学院专属助手小智，你的AI学习与生活指南。</div>`;
+        }
+
+        // 3. 📍 场景位置提示 (薄荷绿、左置高亮边框)
+        if (globalLocationTip) {
+          let bottomMargin = personalizedTip || weatherTip ? "10px" : "12px";
+          // 💡 这里用 ${globalLocationIcon} 替换了写死的地标符号
+          finalDesc += `<div style="background: linear-gradient(90deg, rgba(46, 204, 113, 0.08) 0%, rgba(46, 204, 113, 0.01) 100%); margin: 0 -10px ${bottomMargin} -10px; padding: 8px 10px 8px 7px; border-left: 3px solid rgba(46, 204, 113, 0.5); border-radius: 6px; color: #27ae60; font-size: 12px; line-height: 1.4; font-weight: 500;">${globalLocationIcon} ${globalLocationTip}</div>`;
+        }
+
+        // 4. 🎈 节日/周末提示 (淡紫色、右置高亮边框 - 保持交替感)
         if (personalizedTip) {
-            finalDesc += `<div style="color: #7b40bc; font-size: 12px; line-height: 1.4; font-weight: 500;">${personalizedTip}</div>`;
+          let bottomMargin = weatherTip ? "10px" : "12px";
+          finalDesc += `<div style="background: linear-gradient(270deg, rgba(155, 81, 224, 0.08) 0%, rgba(155, 81, 224, 0.01) 100%); margin: 0 -10px ${bottomMargin} -10px; padding: 8px 7px 8px 10px; border-right: 3px solid rgba(155, 81, 224, 0.4); border-radius: 6px; color: #7b40bc; font-size: 12px; line-height: 1.4; font-weight: 500;">${personalizedTip}</div>`;
         }
+
+        // 5. 🌤️ 天气提醒 (淡蓝色、左置高亮边框)
         if (weatherTip) {
-            finalDesc += `<div style="color: #4a75a2; font-size: 12px; line-height: 1.4; font-weight: 500;">${weatherTip}</div>`;
+          finalDesc += `<div style="background: linear-gradient(90deg, rgba(74, 144, 226, 0.08) 0%, rgba(74, 144, 226, 0.03) 100%); margin: 0 -10px 12px -10px; padding: 8px 10px 8px 7px; border-left: 3px solid rgba(74, 144, 226, 0.4); border-radius: 6px; color: #4a75a2; font-size: 12px; line-height: 1.4; font-weight: 500;">${weatherTip}</div>`;
         }
-        
-        finalDesc += `</div>`;
-    }
-    
-    // 3. 底部操作指引
-    finalDesc += `<div style="font-size: 11px; color: #999; display: flex; align-items: center; gap: 4px;">
+
+        // 6. 底部操作指引
+        finalDesc += `<div style="font-size: 11px; color: #999; display: flex; align-items: center; gap: 4px;">
         <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
             <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
@@ -2091,8 +2625,70 @@
         按住下方即可语音交流
     </div>`;
 
-    descEl.innerHTML = finalDesc;
+        descEl.innerHTML = finalDesc;
       }
+      // ==========================================
+      // 💡 智能滑动指示器监测逻辑 (滑动即消失 + 重置机制)
+      // ==========================================
+      const scrollIndicator = document.getElementById("scroll-indicator");
+      const recContentEl = document.getElementById("recommend-content");
+      const chatContentEl = document.getElementById("chat-content");
+
+      // 全局状态：记录在当前对话/页面下，用户是否已经发生过滑动
+      window.hasUserScrolledDown = false;
+
+      // 🌟 对外暴露的重置函数 (供新对话或刷新时调用)
+      window.resetScrollIndicator = function () {
+        window.hasUserScrolledDown = false; // 恢复未滑动状态
+        setTimeout(checkActiveScroll, 100); // 延迟检测，等待内容渲染完毕
+      };
+
+      function updateScrollIndicator(element) {
+        if (!scrollIndicator || !element) return;
+
+        // 1. 如果用户在这个内容下已经往下滑动过了，彻底隐藏提示并退出
+        if (window.hasUserScrolledDown) {
+          scrollIndicator.classList.remove("visible");
+          return;
+        }
+
+        // 2. 检测用户的实质性滑动操作 (只要往下滚动超过 10px，就视为用户懂了)
+        if (element.scrollTop > 10) {
+          window.hasUserScrolledDown = true; // 标记为已滑动
+          scrollIndicator.classList.remove("visible");
+          return;
+        }
+
+        // 3. 还没滑动过，判断内容是否超长，决定是否显示箭头
+        const canScrollDown = element.scrollHeight > element.clientHeight + 2;
+        if (canScrollDown) {
+          scrollIndicator.classList.add("visible");
+        } else {
+          scrollIndicator.classList.remove("visible");
+        }
+      }
+
+      function checkActiveScroll() {
+        const activeEl =
+          recContentEl.style.display !== "none" ? recContentEl : chatContentEl;
+        updateScrollIndicator(activeEl);
+      }
+
+      // 监听手指滑动事件
+      recContentEl.addEventListener("scroll", () =>
+        updateScrollIndicator(recContentEl),
+      );
+      chatContentEl.addEventListener("scroll", () =>
+        updateScrollIndicator(chatContentEl),
+      );
+
+      // 监听内部内容增减事件
+      const observer = new MutationObserver(checkActiveScroll);
+      observer.observe(recContentEl, { childList: true, subtree: true });
+      observer.observe(chatContentEl, { childList: true, subtree: true });
+
+      window.addEventListener("resize", checkActiveScroll);
+      setTimeout(checkActiveScroll, 500); // 初次加载检测
     </script>
   </body>
 </html>

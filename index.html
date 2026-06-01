@@ -1145,7 +1145,17 @@
       }
 
       // 🚀 核心修复：移动端音频“破冰”解锁机制 (音量置零法)
-      const unlockAudio = function () {
+      // 🚀 核心修复：移动端音频“破冰”解锁机制 (音量置零法)
+      const unlockAudio = function (e) {
+        // 🌟 关键修复：解决第一次点击无声音的资源冲突
+        // 如果用户的第一次触摸直接按在了麦克风按钮上，直接退出破冰函数！
+        // 因为麦克风的点击本身就是真实用户交互，浏览器会天然放行，无需在此处静音并暂停，否则会掐断正常的按键音。
+        if (e && e.target && typeof e.target.closest === 'function' && e.target.closest('#mic-btn')) {
+          document.body.removeEventListener("touchstart", unlockAudio);
+          document.body.removeEventListener("click", unlockAudio);
+          return;
+        }
+
         [pressSound, releaseSound, cancelSound].forEach((audio) => {
           if (!audio.unlocked) {
             audio.volume = 0; // 💡 关键修复：用音量0替代 muted=true，强制 iOS 激活音频会话
@@ -2179,7 +2189,7 @@
       let globalLng = 108.384666;
       let globalLat = 30.796417;
       // ==========================================
-      // ⛅ 高德定位 + 天气引擎 (融合电子围栏)
+      // ⛅ 高德定位 + 天气引擎 (完全修复手机端定位起点问题)
       // ==========================================
       async function fetchRealTimeWeather() {
         try {
@@ -2189,8 +2199,7 @@
           const getCity = async () => {
             return new Promise((resolve) => {
               const script = document.createElement("script");
-              script.src =
-                "https://whois.pconline.com.cn/ipJson.jsp?callback=weatherIpCallback";
+              script.src = "https://whois.pconline.com.cn/ipJson.jsp?callback=weatherIpCallback";
               document.body.appendChild(script);
               window.weatherIpCallback = (data) => {
                 document.body.removeChild(script);
@@ -2202,75 +2211,41 @@
           };
           const fallbackCity = await getCity();
 
-          // 2. 同时召唤 高德定位 和 高德天气 插件
+          // 2. 召唤高德定位组件
           AMap.plugin(["AMap.Geolocation", "AMap.Weather"], function () {
             var geolocation = new AMap.Geolocation({
-              enableHighAccuracy: true,
-              timeout: 8000,
-              maximumAge: 60000,
+              enableHighAccuracy: true, // 强制开启高精度
+              timeout: 12000,           // 💡 核心修复1：移动端搜星慢，将超时从8秒延长至12秒
+              maximumAge: 0,            // 💡 核心修复2：禁止使用旧缓存，必须拿最新位置
               convert: true,
               needAddress: true,
             });
 
+            // 执行定位
             geolocation.getCurrentPosition(function (status, result) {
               if (status === "complete") {
-                // --- 🌟 1. 高德定位成功 ---
-                const lat = result.position.lat;
-                const lon = result.position.lng;
-                globalLng = lon;
-                globalLat = lat;
+                // --- 🌟 1. 高德 GPS 精确定位成功 ---
+                globalLng = result.position.lng;
+                globalLat = result.position.lat;
                 const ad = result.addressComponent;
                 const district = ad.district || "";
                 const township = ad.township || "";
 
-                // 🌟🌟 新增：校园电子围栏 (场景化问候)
-                // 你可以用高德坐标拾取器(https://lbs.amap.com/tools/picker)换成你们学校真实的经纬度
-                // 🌟🌟 新增：校园电子围栏 (场景化问候)
+                // 🌟🌟 校园电子围栏逻辑
                 const campusPOIs = [
-                  {
-                    name: "巴南实训基地",
-                    lng: 106.699251,
-                    lat: 29.408053,
-                    radius: 500,
-                    icon: "🏫", // 💡 添加实训基地专属图标 (学校)
-                    msg: "欢迎来到巴南实训基地！实践出真知，祝你今天学习顺利。",
-                  },
-                  {
-                    name: "图书馆",
-                    lng: 108.450033,
-                    lat: 30.756368,
-                    radius: 30,
-                    icon: "📖", // 💡 添加图书馆专属图标 (书本)
-                    msg: "检测到您在图书馆附近，愿你在知识的海洋里遨游，保持安静哦。",
-                  },
-                  {
-                    name: "实训机房",
-                    lng: 108.451867,
-                    lat: 30.757271,
-                    radius: 30,
-                    icon: "💻", // 💡 添加机房专属图标 (电脑)
-                    msg: "您好像在实训机房附近，请注意用电安全，规范使用设备哦！",
-                  },
+                  { name: "巴南实训基地", lng: 106.699251, lat: 29.408053, radius: 500, icon: "🏫", msg: "欢迎来到巴南实训基地！实践出真知，祝你今天学习顺利。" },
+                  { name: "图书馆", lng: 108.450033, lat: 30.756368, radius: 30, icon: "📖", msg: "检测到您在图书馆附近，愿你在知识的海洋里遨游，保持安静哦。" },
+                  { name: "实训机房", lng: 108.451867, lat: 30.757271, radius: 30, icon: "💻", msg: "您好像在实训机房附近，请注意用电安全，规范使用设备哦！" }
                 ];
 
                 globalLocationTip = "";
-                globalLocationIcon = "📍"; // 重置为默认图标
-                // ==========================================
-                // ⛅ 全局环境状态管理
-                // ==========================================
-                const weatherEl = document.querySelector(".weather-info");
-
-                globalLocationTip = "";
-                globalLocationIcon = "📍"; // 重置为默认图标
+                globalLocationIcon = "📍"; 
 
                 for (let poi of campusPOIs) {
-                  // 调用高德原生算法，计算当前坐标与预设目标点的直线距离 (单位:米)
-                  const distance = Math.round(
-                    AMap.GeometryUtil.distance([lon, lat], [poi.lng, poi.lat]),
-                  );
+                  const distance = Math.round(AMap.GeometryUtil.distance([globalLng, globalLat], [poi.lng, poi.lat]));
                   if (distance <= poi.radius) {
                     globalLocationTip = poi.msg;
-                    globalLocationIcon = poi.icon || "📍"; // 🌟 一旦进入围栏，同步获取专属图标
+                    globalLocationIcon = poi.icon || "📍"; 
                     break;
                   }
                 }
@@ -2278,31 +2253,22 @@
                 let preciseLocation = fallbackCity;
                 if (district || township) {
                   preciseLocation = `${district}${township}`;
-                  if (preciseLocation.length > 7)
-                    preciseLocation = preciseLocation.substring(0, 7) + "...";
+                  if (preciseLocation.length > 7) preciseLocation = preciseLocation.substring(0, 7) + "...";
                 } else {
-                  preciseLocation = (ad.city || fallbackCity).replace(
-                    /市$/,
-                    "",
-                  );
+                  preciseLocation = (ad.city || fallbackCity).replace(/市$/, "");
                 }
 
-                // --- 🌟 2. 高德天气极速查询 ---
+                // 查天气
                 var weather = new AMap.Weather();
-                // 直接用高德定位拿到的官方区域编码(adcode)去查天气，100%匹配
                 weather.getLive(ad.adcode, function (err, data) {
                   if (!err) {
                     const temp = data.temperature;
-                    const weatherDesc = data.weather; // 高德直接返回中文，如"晴", "小雨", "雷阵雨"
-
+                    const weatherDesc = data.weather; 
                     weatherEl.innerText = `${preciseLocation} ${temp}°C ${weatherDesc}`;
-
-                    // 🌟 同步给全局变量 (供刚进页面的欢迎语音使用)
                     globalTemp = temp;
-                    globalCode = weatherDesc; // 注意：这里存的变成了中文
+                    globalCode = weatherDesc; 
                     globalWeatherReady = true;
 
-                    // 更新气泡卡片
                     const descEl = document.getElementById("greet-desc");
                     if (descEl) {
                       descEl.style.transition = "opacity 0.25s ease-in-out";
@@ -2315,36 +2281,45 @@
                   }
                 });
               } else {
-                // --- ❌ 定位失败，走高德天气城市兜底 ---
-                console.warn("定位失败", result.message);
+                // --- ❌ 2. GPS 定位失败兜底 (核心修复区) ---
+                console.warn("GPS 精确定位失败:", result.message);
 
-                // 🌟 修复 2：增加页面底部的提示，让用户明白为何定位没有更新
-                statusEl.innerText = "未获取到精确位置，已使用万州校区默认坐标";
-                setTimeout(() => {
-                  statusEl.innerText = "小智已准备好，请随时提问";
-                }, 4500);
-
-                var weather = new AMap.Weather();
-                weather.getLive(fallbackCity, function (err, data) {
-                  // ... 这里的查天气代码保持不变 ...
-                  if (!err) {
-                    const temp = data.temperature;
-                    const weatherDesc = data.weather;
-                    weatherEl.innerText = `${fallbackCity} ${temp}°C ${weatherDesc}`;
-
-                    globalTemp = temp;
-                    globalCode = weatherDesc;
-                    globalWeatherReady = true;
-
-                    const descEl = document.getElementById("greet-desc");
-                    if (descEl) {
-                      descEl.style.opacity = "0";
-                      setTimeout(() => {
-                        updatePersonalizedGreeting(temp, weatherDesc);
-                        descEl.style.opacity = "1";
-                      }, 250);
-                    }
+                // 💡 核心修复 3：如果高精度 GPS 被拒绝（如 HTTP 环境），强制使用 IP 获取当前大体坐标！
+                // 坚决抛弃写死在代码里的默认校区坐标！
+                geolocation.getCityInfo(function(cityStatus, cityResult) {
+                  if (cityStatus === 'complete' && cityResult.center) {
+                      globalLng = cityResult.center[0];
+                      globalLat = cityResult.center[1];
+                      console.log("📍 已通过手机 IP 切换至当前城市大体坐标:", globalLng, globalLat);
+                      statusEl.innerText = "受限于权限或网络，已使用您的大体位置";
+                  } else {
+                      statusEl.innerText = "未获取到精确位置，正在盲跑";
                   }
+                  
+                  setTimeout(() => {
+                      statusEl.innerText = "小智已准备好，请随时提问";
+                  }, 4500);
+
+                  var weather = new AMap.Weather();
+                  weather.getLive(fallbackCity, function (err, data) {
+                    if (!err) {
+                      const temp = data.temperature;
+                      const weatherDesc = data.weather;
+                      weatherEl.innerText = `${fallbackCity} ${temp}°C ${weatherDesc}`;
+                      globalTemp = temp;
+                      globalCode = weatherDesc;
+                      globalWeatherReady = true;
+
+                      const descEl = document.getElementById("greet-desc");
+                      if (descEl) {
+                        descEl.style.opacity = "0";
+                        setTimeout(() => {
+                          updatePersonalizedGreeting(temp, weatherDesc);
+                          descEl.style.opacity = "1";
+                        }, 250);
+                      }
+                    }
+                  });
                 });
               }
             });

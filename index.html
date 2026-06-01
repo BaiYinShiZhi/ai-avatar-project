@@ -449,6 +449,7 @@
 </div>
 
 <script>
+
     // ==========================================
     // 🌌 1. 神经元粒子特效引擎 (AI 科技感)
     // ==========================================
@@ -628,6 +629,26 @@
         "计算机机房用电安全注意事项？", "如何防范网络诈骗、信息泄露？", "实验室应急处置方法有哪些？", "校园消防安全须知？", "数据安全使用有哪些规范？",
         "本专业实习岗位和要求是什么？", "合作企业招聘信息在哪里查看？", "简历制作和面试有哪些技巧？", "专科升学相关政策与渠道？"
     ];
+    // ==========================================
+    // 📳 4. 交互音效与震动反馈引擎
+    // ==========================================
+    // 👉 请将这里的链接替换为你找好的音效文件地址 (推荐短促的 mp3 或 wav)
+    const pressSound = new Audio('https://ai-avatar-wwl.oss-cn-beijing.aliyuncs.com/dianji.mp3'); 
+    const releaseSound = new Audio('https://ai-avatar-wwl.oss-cn-beijing.aliyuncs.com/fasong.mp3'); 
+    const cancelSound = new Audio('https://ai-avatar-wwl.oss-cn-beijing.aliyuncs.com/quxiao.mp3'); // 可选：上划取消时的失败音效
+
+    // 预加载音效，防止第一次点击时声音延迟
+    pressSound.preload = 'auto';
+    releaseSound.preload = 'auto';
+    cancelSound.preload = 'auto';
+
+    // 封装震动函数 (兼容安卓，静默忽略 iOS)
+    function triggerVibration(duration) {
+        if (navigator.vibrate) {
+            navigator.vibrate(duration); // 传入毫秒数
+        }
+    }
+
 
     // 🌟 获取图层元素 (适配最新的 HTML 结构)
     const staticAvatar = document.getElementById('static-avatar');
@@ -885,6 +906,7 @@
     };
 
     // --- 触控事件 ---
+    // --- 触控事件 (加入震动与音效) ---
     const handleInputStart = (e) => {
         if (isAITalking || isAIThinking) {
             hintText.innerText = isAITalking ? "小智正在讲话..." : "小智正在思考...";
@@ -892,6 +914,13 @@
         }
         e.preventDefault(); 
         
+        // 📳 触发短促有力的震动 (20毫秒，仅安卓生效)
+        triggerVibration(20);
+        
+        // 🎵 播放按下音效 (每次播放前将进度归零，支持快速连续点击)
+        pressSound.currentTime = 0;
+        pressSound.play().catch(()=>{});
+
         // 🚀 iOS/Safari 黑科技：用户触摸瞬间解锁两个视频的自动播放限制
         thinkingVideo.play().then(() => thinkingVideo.pause()).catch(() => {});
         talkingVideo.play().then(() => talkingVideo.pause()).catch(() => {});
@@ -907,7 +936,7 @@
         
         if (!isRecording) {
             try { recognition.start(); } catch(err) {}
-            statusEl.innerText = "正在聆听...";
+            statusEl.innerText = "正在倾听您的声音...";
             isRecording = true;
             switchToChat();
             startVisualizer(); 
@@ -938,9 +967,12 @@
         }
     };
 
-    const handleInputEnd = (e) => {
+   const handleInputEnd = (e) => {
         if (!isHolding) return;
         isHolding = false;
+        
+        // 📳 触发轻微的回弹震动 (10毫秒，区别于按下的力度)
+        triggerVibration(10);
         
         micBtn.style.transform = 'scale(1)';
         micBtn.style.background = "rgba(255, 255, 255, 0.6)";
@@ -949,11 +981,19 @@
         hintText.style.color = "#888888";
         
         if (isCanceling) {
+            // 🎵 播放取消音效 (上划作废)
+            cancelSound.currentTime = 0;
+            cancelSound.play().catch(()=>{});
+            
             hintText.innerText = "已取消发送";
             recognition.abort(); 
             isRecording = false; stopVisualizer();
             setTimeout(() => enableMicUI(), 1000); 
         } else {
+            // 🎵 播放正常的抬起/发送音效
+            releaseSound.currentTime = 0;
+            releaseSound.play().catch(()=>{});
+            
             hintText.innerText = "正在处理语音...";
             recognition.stop(); 
         }

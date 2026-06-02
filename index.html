@@ -722,6 +722,78 @@
         cursor: pointer;
         background-color: #f9f9f9;
       }
+      /* ========================================== */
+      /* ⌨️ 文本输入面板专属样式 */
+      /* ========================================== */
+      .text-input-panel {
+        max-height: 0;
+        opacity: 0;
+        overflow: hidden;
+        padding: 0 20px;
+        display: flex;
+        align-items: flex-end;
+        gap: 12px;
+        transition:
+          max-height 0.4s cubic-bezier(0.25, 0.8, 0.25, 1),
+          opacity 0.3s ease,
+          padding 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+        z-index: 10;
+      }
+
+      /* 激活状态：面板展开，整体 UI 被自然下推 */
+      .text-input-panel.active {
+        max-height: 150px;
+        opacity: 1;
+        padding: 10px 20px 20px 20px;
+      }
+
+      .text-input-box {
+        flex: 1;
+        background: rgba(255, 255, 255, 0.65);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 1);
+        border-radius: 16px;
+        padding: 12px 14px;
+        font-size: 14px;
+        color: #333;
+        resize: none;
+        height: 72px; /* 约容纳 3 行文本的高度 */
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+        outline: none;
+        font-family: inherit;
+        line-height: 1.5;
+      }
+
+      .text-input-box::placeholder {
+        color: #999;
+      }
+
+      .send-action-btn {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #9b51e0, #4a90e2);
+        color: white;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        box-shadow: 0 4px 12px rgba(155, 81, 224, 0.3);
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        margin-bottom: 14px; /* 让按钮和输入框底部对齐 */
+      }
+
+      .send-action-btn:active {
+        transform: scale(0.9);
+      }
+
+      /* 停止状态的科技红渐变 */
+      .send-action-btn.is-stopping {
+        background: linear-gradient(135deg, #ff4d4f, #ff7875);
+        box-shadow: 0 4px 12px rgba(255, 77, 79, 0.3);
+      }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script type="text/javascript">
@@ -769,14 +841,59 @@
       </div>
     </div>
     <div class="app-container">
+      <!-- 🌟 修改 1：顶部导航栏中的菜单按钮替换为切换按钮 -->
       <div class="top-nav">
-        <div class="icon-btn">≡</div>
+        <div
+          class="icon-btn"
+          id="mode-toggle-btn"
+          style="display: flex; align-items: center; gap: 5px"
+        >
+          <svg
+            id="icon-keyboard"
+            viewBox="0 0 24 24"
+            width="20"
+            height="20"
+            stroke="#333"
+            stroke-width="2"
+            fill="none"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect>
+            <path
+              d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M10 12h.01M14 12h.01M18 12h.01M7 16h10"
+            ></path>
+          </svg>
+          <svg
+            id="icon-mic-toggle"
+            viewBox="0 0 24 24"
+            width="20"
+            height="20"
+            stroke="#333"
+            stroke-width="2"
+            fill="none"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            style="display: none"
+          >
+            <path
+              d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"
+            ></path>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+          </svg>
+          <span
+            id="mode-toggle-text"
+            style="font-size: 13px; font-weight: 500; color: #555"
+            >文本输入</span
+          >
+        </div>
         <div class="nav-title">小智</div>
         <div
           class="icon-btn"
           id="mute-btn"
           style="display: flex; align-items: center"
         >
+          <!-- 这里保留你原有的静音图标代码 -->
           <svg
             id="vol-on-icon"
             viewBox="0 0 24 24"
@@ -810,6 +927,48 @@
           </svg>
         </div>
       </div>
+
+      <!-- 🌟 新增：隐藏的文本输入面板 (展开时会把下面的元素平滑推下去) -->
+      <div id="text-input-panel" class="text-input-panel">
+        <textarea
+          id="text-input-box"
+          class="text-input-box"
+          placeholder="输入您的问题，小智随时为您解答..."
+        ></textarea>
+        <div id="send-action-btn" class="send-action-btn">
+          <!-- 发送图标 (纸飞机) -->
+          <svg
+            id="icon-send"
+            viewBox="0 0 24 24"
+            width="20"
+            height="20"
+            stroke="currentColor"
+            stroke-width="2"
+            fill="none"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+          <!-- 停止图标 (实心正方形) -->
+          <svg
+            id="icon-stop-text"
+            viewBox="0 0 24 24"
+            width="20"
+            height="20"
+            stroke="currentColor"
+            stroke-width="2"
+            fill="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            style="display: none"
+          >
+            <rect x="7" y="7" width="10" height="10" rx="2" ry="2"></rect>
+          </svg>
+        </div>
+      </div>
+
       <div class="weather-info">定位中...</div>
 
       <div class="header-section">
@@ -873,7 +1032,7 @@
         </div>
       </div>
 
-      <div class="control-section">
+      <div class="control-section" id="control-section">
         <div class="hint-text" id="hint-text">按住说话，上划取消</div>
         <canvas id="wave-canvas" width="400" height="80"></canvas>
         <div class="wave-spacer" id="wave-spacer"></div>
@@ -1516,6 +1675,7 @@
 
         hintText.innerText = "点击此处打断并重新提问";
         hintText.style.color = "#4a90e2"; // 底部提示文字也改为蓝色
+        if (window.updateTextBtnState) window.updateTextBtnState("stop");
       }
 
       function enableMicUI() {
@@ -1539,6 +1699,7 @@
           hintText.innerText = "按住说话，上划取消";
           hintText.style.color = "#888";
         }
+        if (window.updateTextBtnState) window.updateTextBtnState("send");
       }
 
       function switchToChat() {
@@ -2299,7 +2460,7 @@
                     name: "图书馆",
                     lng: 108.450033,
                     lat: 30.756368,
-                    radius: 30,
+                    radius: 200,
                     icon: "📖",
                     msg: "检测到您在图书馆附近，愿你在知识的海洋里遨游，保持安静哦。",
                   },
@@ -2307,7 +2468,7 @@
                     name: "实训机房",
                     lng: 108.451867,
                     lat: 30.757271,
-                    radius: 30,
+                    radius: 200,
                     icon: "💻",
                     msg: "您好像在实训机房附近，请注意用电安全，规范使用设备哦！",
                   },
@@ -2768,6 +2929,95 @@
 
       window.addEventListener("resize", checkActiveScroll);
       setTimeout(checkActiveScroll, 500); // 初次加载检测
+
+      // ==========================================
+      // ⌨️ 文本与语音输入切换模块
+      // ==========================================
+      const modeToggleBtn = document.getElementById("mode-toggle-btn");
+      const iconKeyboard = document.getElementById("icon-keyboard");
+      const iconMicToggle = document.getElementById("icon-mic-toggle");
+      const modeToggleText = document.getElementById("mode-toggle-text"); // 🌟 获取新增的文字标签
+      const textInputPanel = document.getElementById("text-input-panel");
+      const controlSection = document.getElementById("control-section");
+      const sendActionBtn = document.getElementById("send-action-btn");
+      const textInputBox = document.getElementById("text-input-box");
+      const iconSend = document.getElementById("icon-send");
+      const iconStopText = document.getElementById("icon-stop-text");
+
+      let currentInputMode = "voice"; // 'voice' or 'text'
+
+      // 1. 切换按钮点击事件
+      modeToggleBtn.addEventListener("click", () => {
+        // 约束检查：AI 在进行任何功能时不能切换输入方式
+        if (isAITalking || isAIThinking) {
+          statusEl.innerText = "小智正在忙碌中，请稍后再切换输入模式哦~";
+          return;
+        }
+
+        if (currentInputMode === "voice") {
+          // 切换为文本模式
+          currentInputMode = "text";
+          iconKeyboard.style.display = "none"; // 隐藏键盘图标
+          iconMicToggle.style.display = "block"; // 显示麦克风图标
+          modeToggleText.innerText = "语音输入"; // 🌟 提示用户：点击即可切回语音
+
+          textInputPanel.classList.add("active"); // 展开文本框面板
+          controlSection.style.display = "none"; // 隐藏底部的语音控制模块
+        } else {
+          // 切换为语音模式
+          currentInputMode = "voice";
+          iconKeyboard.style.display = "block";
+          iconMicToggle.style.display = "none";
+          modeToggleText.innerText = "文本输入"; // 🌟 提示用户：点击即可切回文本
+
+          textInputPanel.classList.remove("active"); // 收起文本框面板
+          controlSection.style.display = "flex"; // 恢复显示底部语音控制模块
+        }
+      });
+
+      // 2. 发送按钮/停止按钮共用点击事件
+      sendActionBtn.addEventListener("click", () => {
+        // 如果当前 AI 正在运行，该按钮承担“停止”的功能
+        if (isAITalking || isAIThinking) {
+          interruptAITask(); // 调用你原有的全局 AI 打断机制
+          return;
+        }
+
+        // 处理正常的发送逻辑
+        const text = textInputBox.value.trim();
+        if (!text) return; // 拦截空文本
+
+        // 清空文本框并收起软键盘
+        textInputBox.value = "";
+        textInputBox.blur();
+
+        // 初始化聊天视图
+        switchToChat();
+        messageEl.innerHTML = `<div class="user-text-style"><strong>🧑 你：</strong>${text}</div>`;
+        statusEl.innerText = "正在云端思考...";
+
+        isAIThinking = true;
+
+        // 🌟 同步更新按钮状态为“停止”
+        updateTextBtnState("stop");
+
+        // 触发头像切换与大模型请求
+        switchAvatarState("thinking");
+        callDeepSeek(text);
+      });
+
+      // 3. UI 按钮状态控制函数
+      window.updateTextBtnState = function (state) {
+        if (state === "stop") {
+          sendActionBtn.classList.add("is-stopping");
+          iconSend.style.display = "none";
+          iconStopText.style.display = "block";
+        } else {
+          sendActionBtn.classList.remove("is-stopping");
+          iconSend.style.display = "block";
+          iconStopText.style.display = "none";
+        }
+      };
     </script>
   </body>
 </html>

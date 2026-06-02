@@ -684,16 +684,43 @@
         color: #9b51e0;
         font-size: 13px;
       }
-     /* ========================================== */
+      /* ========================================== */
       /* 🛑 打断按钮专属呼吸灯动画 (科技海蓝色) */
       /* ========================================== */
       @keyframes pulseStop {
-          0% { box-shadow: 0 0 0 0 rgba(74, 144, 226, 0.4); }
-          70% { box-shadow: 0 0 0 12px rgba(74, 144, 226, 0); }
-          100% { box-shadow: 0 0 0 0 rgba(74, 144, 226, 0); }
+        0% {
+          box-shadow: 0 0 0 0 rgba(74, 144, 226, 0.4);
+        }
+        70% {
+          box-shadow: 0 0 0 12px rgba(74, 144, 226, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(74, 144, 226, 0);
+        }
       }
       .stopping-pulse {
-          animation: pulseStop 2s infinite;
+        animation: pulseStop 2s infinite;
+      }
+      .message-content img {
+        /* 1. 双重尺寸约束（防止霸屏） */
+        max-width: 100% !important;
+        max-height: 260px !important;
+
+        /* 2. 比例与缩放自适应 */
+        width: auto;
+        height: auto;
+        object-fit: contain;
+
+        /* 3. 排版美化（🌟 核心修改：居中显示） */
+        display: block; /* 必须是 block 块级元素，居中才会生效 */
+        margin: 12px auto !important; /* 上下留白12px，左右 auto 自动平分（绝对居中） */
+
+        border-radius: 6px;
+        border: 1px solid #f0f0f0;
+
+        /* 4. 交互暗示 */
+        cursor: pointer;
+        background-color: #f9f9f9;
       }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -892,7 +919,18 @@
             <line x1="8" y1="23" x2="16" y2="23"></line>
           </svg>
           <!-- 🌟 新增：代表“打断/停止”的方形图标 -->
-          <svg id="mic-icon-stop" style="display: none" viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="currentColor" stroke-linecap="round" stroke-linejoin="round">
+          <svg
+            id="mic-icon-stop"
+            style="display: none"
+            viewBox="0 0 24 24"
+            width="22"
+            height="22"
+            stroke="currentColor"
+            stroke-width="2"
+            fill="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
             <rect x="7" y="7" width="10" height="10" rx="2" ry="2"></rect>
           </svg>
         </div>
@@ -1076,39 +1114,46 @@
       // 页面结构一旦解析完毕，立刻启动预下载
       document.addEventListener("DOMContentLoaded", preloadAssets);
       const QUESTIONS_POOL = [
-        "咱们学院有哪些专业？",
-        "怎么查询课表和考试安排？",
-        "学院领导和任课老师有哪些？",
-        "实训室使用有什么规定？",
-        "近期有哪些技能竞赛可以报名？",
-        "奖助学金申请流程是什么？",
-        "人工智能技术应用专业核心课程有哪些？",
-        "Python、机器学习该怎么入门学习？",
-        "本专业可以使用哪些免费 AI 工具？",
-        "数字媒体技术专业就业方向有哪些？",
-        "课程设计 / 毕业设计有哪些参考方向？",
-        "专业教材和学习资料在哪里领取？",
-        "学院各教研室负责人是谁？",
-        "如何联系专业任课老师？",
-        "转专业的条件和办理流程是什么？",
-        "请假、补办证件怎么办理？",
-        "成绩查询与复核流程是什么？",
-        "日常教学管理有哪些规章制度？",
-        "学院有哪些专业实训室和实训基地？",
-        "巴南实训基地相关管理规定是什么？",
-        "本院常参加哪些职业技能大赛？",
-        "竞赛报名时间和备赛要求有哪些？",
-        "实训室使用规范与安全守则？",
-        "校企合作企业有哪些，实训安排如何？",
-        "计算机机房用电安全注意事项？",
-        "如何防范网络诈骗、信息泄露？",
-        "实验室应急处置方法有哪些？",
-        "校园消防安全须知？",
-        "数据安全使用有哪些规范？",
-        "本专业实习岗位和要求是什么？",
-        "合作企业招聘信息在哪里查看？",
-        "简历制作和面试有哪些技巧？",
-        "专科升学相关政策与渠道？",
+        "学校的全称是什么？",
+        "学校有几个校区？分别在哪里？",
+        "学校的官方网站是什么？",
+        "学校的招生咨询电话是多少？",
+        "学校有哪些主要的行政职能部门？",
+        "学生处负责哪些事务？怎么联系？",
+        "人工智能学院的办公室在哪里？",
+        "学校的后勤服务报修电话是多少？",
+        "人工智能学院开设了哪些专业？",
+        "数字媒体技术专业主要学什么课程？",
+        "计算机网络技术专业的就业方向有哪些？",
+        "数字媒体应用技术专业的学制是几年？",
+        "数字媒体技术专业可以专升本吗？",
+        "计算机相关专业需要带电脑吗？",
+        "数字媒体技术专业的核心课程有哪些？",
+        "学校有哪些特色专业？",
+        "黄楠老师教哪些课程？",
+        "黄楠老师获得过什么教学奖项？",
+        "熊杨老师的AIGC绘图课难吗？",
+        "熊杨老师获得过巴渝工匠杯一等奖吗？",
+        "曹明雨老师的三维影视动画课怎么样？",
+        "曹明雨老师会指导学生参加设计类竞赛吗？",
+        "曹明雨老师主持过什么省级项目？",
+        "冉浪老师的研究方向是什么？",
+        "冉浪老师发表过SCI论文吗？",
+        "刘其文老师有企业工作经验吗？",
+        "刘其文老师的课有真实商业项目吗？",
+        "刘其文老师会指导学生参加技能大赛吗？",
+        "孙杨高老师教哪些课程？",
+        "孙杨高老师的教学风格怎么样？",
+        "孙杨高老师获得过什么教学或行业奖项？",
+        "孙杨高老师会指导学生参加什么类型的竞赛？",
+        "孙杨高老师的研究方向是什么？",
+        "孙杨高老师有企业实战经验吗？",
+        "孙杨高老师的办公地点在哪里？",
+        "数字媒体技术专业教研团队有哪些老师？",
+        "教AI辅助设计的老师有哪些？",
+        "教三维建模和动画的老师有哪些？",
+        "教影视后期与特效的老师有哪些？",
+        "人工智能学院哪位老师擅长指导学生参加技能大赛？",
       ];
       // ==========================================
       // 📳 4. 交互音效与震动反馈引擎 (移动端破冰兼容版)
@@ -1150,7 +1195,12 @@
         // 🌟 关键修复：解决第一次点击无声音的资源冲突
         // 如果用户的第一次触摸直接按在了麦克风按钮上，直接退出破冰函数！
         // 因为麦克风的点击本身就是真实用户交互，浏览器会天然放行，无需在此处静音并暂停，否则会掐断正常的按键音。
-        if (e && e.target && typeof e.target.closest === 'function' && e.target.closest('#mic-btn')) {
+        if (
+          e &&
+          e.target &&
+          typeof e.target.closest === "function" &&
+          e.target.closest("#mic-btn")
+        ) {
           document.body.removeEventListener("touchstart", unlockAudio);
           document.body.removeEventListener("click", unlockAudio);
           return;
@@ -1448,19 +1498,21 @@
         if (activeAudioPlayer) activeAudioPlayer.muted = isGlobalMuted;
       });
 
-    function disableMicUI(reasonText) {
+      function disableMicUI(reasonText) {
         micBtn.style.opacity = "1";
-        
+
         // 💡 变成“停止”按钮样式：使用清爽冷静的科技蓝玻璃拟态渐变
-        micBtn.style.background = "linear-gradient(135deg, rgba(74, 144, 226, 0.15), rgba(74, 144, 226, 0.05))";
+        micBtn.style.background =
+          "linear-gradient(135deg, rgba(74, 144, 226, 0.15), rgba(74, 144, 226, 0.05))";
         micBtn.style.borderColor = "rgba(74, 144, 226, 0.4)";
         micBtn.style.color = "#4a90e2"; // 图标变为海蓝色
         micBtn.style.boxShadow = "0 8px 25px rgba(74, 144, 226, 0.25)";
-        micBtn.classList.add('stopping-pulse'); // 🌟 触发蓝色的呼吸灯动画
+        micBtn.classList.add("stopping-pulse"); // 🌟 触发蓝色的呼吸灯动画
 
         document.getElementById("mic-icon-active").style.display = "none";
         document.getElementById("mic-icon-disabled").style.display = "none";
-        if (document.getElementById("mic-icon-stop")) document.getElementById("mic-icon-stop").style.display = "block";
+        if (document.getElementById("mic-icon-stop"))
+          document.getElementById("mic-icon-stop").style.display = "block";
 
         hintText.innerText = "点击此处打断并重新提问";
         hintText.style.color = "#4a90e2"; // 底部提示文字也改为蓝色
@@ -1470,17 +1522,18 @@
         isAITalking = false;
         isAIThinking = false;
         micBtn.style.opacity = "1";
-        
+
         // 💡 恢复紫色的“麦克风”默认样式
         micBtn.style.background = "rgba(255, 255, 255, 0.6)";
         micBtn.style.borderColor = "rgba(255, 255, 255, 1)";
         micBtn.style.color = "#9b51e0";
         micBtn.style.boxShadow = "0 8px 25px rgba(155, 81, 224, 0.2)";
-        micBtn.classList.remove('stopping-pulse'); // 🌟 移除呼吸灯动画
+        micBtn.classList.remove("stopping-pulse"); // 🌟 移除呼吸灯动画
 
         document.getElementById("mic-icon-active").style.display = "block";
         document.getElementById("mic-icon-disabled").style.display = "none";
-        if (document.getElementById("mic-icon-stop")) document.getElementById("mic-icon-stop").style.display = "none";
+        if (document.getElementById("mic-icon-stop"))
+          document.getElementById("mic-icon-stop").style.display = "none";
 
         if (!isRecording && !isHolding) {
           hintText.innerText = "按住说话，上划取消";
@@ -2199,7 +2252,8 @@
           const getCity = async () => {
             return new Promise((resolve) => {
               const script = document.createElement("script");
-              script.src = "https://whois.pconline.com.cn/ipJson.jsp?callback=weatherIpCallback";
+              script.src =
+                "https://whois.pconline.com.cn/ipJson.jsp?callback=weatherIpCallback";
               document.body.appendChild(script);
               window.weatherIpCallback = (data) => {
                 document.body.removeChild(script);
@@ -2215,8 +2269,8 @@
           AMap.plugin(["AMap.Geolocation", "AMap.Weather"], function () {
             var geolocation = new AMap.Geolocation({
               enableHighAccuracy: true, // 强制开启高精度
-              timeout: 12000,           // 💡 核心修复1：移动端搜星慢，将超时从8秒延长至12秒
-              maximumAge: 0,            // 💡 核心修复2：禁止使用旧缓存，必须拿最新位置
+              timeout: 12000, // 💡 核心修复1：移动端搜星慢，将超时从8秒延长至12秒
+              maximumAge: 0, // 💡 核心修复2：禁止使用旧缓存，必须拿最新位置
               convert: true,
               needAddress: true,
             });
@@ -2233,19 +2287,45 @@
 
                 // 🌟🌟 校园电子围栏逻辑
                 const campusPOIs = [
-                  { name: "巴南实训基地", lng: 106.699251, lat: 29.408053, radius: 500, icon: "🏫", msg: "欢迎来到巴南实训基地！实践出真知，祝你今天学习顺利。" },
-                  { name: "图书馆", lng: 108.450033, lat: 30.756368, radius: 30, icon: "📖", msg: "检测到您在图书馆附近，愿你在知识的海洋里遨游，保持安静哦。" },
-                  { name: "实训机房", lng: 108.451867, lat: 30.757271, radius: 30, icon: "💻", msg: "您好像在实训机房附近，请注意用电安全，规范使用设备哦！" }
+                  {
+                    name: "巴南实训基地",
+                    lng: 106.699251,
+                    lat: 29.408053,
+                    radius: 500,
+                    icon: "🏫",
+                    msg: "欢迎来到巴南实训基地！实践出真知，祝你今天学习顺利。",
+                  },
+                  {
+                    name: "图书馆",
+                    lng: 108.450033,
+                    lat: 30.756368,
+                    radius: 30,
+                    icon: "📖",
+                    msg: "检测到您在图书馆附近，愿你在知识的海洋里遨游，保持安静哦。",
+                  },
+                  {
+                    name: "实训机房",
+                    lng: 108.451867,
+                    lat: 30.757271,
+                    radius: 30,
+                    icon: "💻",
+                    msg: "您好像在实训机房附近，请注意用电安全，规范使用设备哦！",
+                  },
                 ];
 
                 globalLocationTip = "";
-                globalLocationIcon = "📍"; 
+                globalLocationIcon = "📍";
 
                 for (let poi of campusPOIs) {
-                  const distance = Math.round(AMap.GeometryUtil.distance([globalLng, globalLat], [poi.lng, poi.lat]));
+                  const distance = Math.round(
+                    AMap.GeometryUtil.distance(
+                      [globalLng, globalLat],
+                      [poi.lng, poi.lat],
+                    ),
+                  );
                   if (distance <= poi.radius) {
                     globalLocationTip = poi.msg;
-                    globalLocationIcon = poi.icon || "📍"; 
+                    globalLocationIcon = poi.icon || "📍";
                     break;
                   }
                 }
@@ -2253,9 +2333,13 @@
                 let preciseLocation = fallbackCity;
                 if (district || township) {
                   preciseLocation = `${district}${township}`;
-                  if (preciseLocation.length > 7) preciseLocation = preciseLocation.substring(0, 7) + "...";
+                  if (preciseLocation.length > 7)
+                    preciseLocation = preciseLocation.substring(0, 7) + "...";
                 } else {
-                  preciseLocation = (ad.city || fallbackCity).replace(/市$/, "");
+                  preciseLocation = (ad.city || fallbackCity).replace(
+                    /市$/,
+                    "",
+                  );
                 }
 
                 // 查天气
@@ -2263,10 +2347,10 @@
                 weather.getLive(ad.adcode, function (err, data) {
                   if (!err) {
                     const temp = data.temperature;
-                    const weatherDesc = data.weather; 
+                    const weatherDesc = data.weather;
                     weatherEl.innerText = `${preciseLocation} ${temp}°C ${weatherDesc}`;
                     globalTemp = temp;
-                    globalCode = weatherDesc; 
+                    globalCode = weatherDesc;
                     globalWeatherReady = true;
 
                     const descEl = document.getElementById("greet-desc");
@@ -2286,18 +2370,22 @@
 
                 // 💡 核心修复 3：如果高精度 GPS 被拒绝（如 HTTP 环境），强制使用 IP 获取当前大体坐标！
                 // 坚决抛弃写死在代码里的默认校区坐标！
-                geolocation.getCityInfo(function(cityStatus, cityResult) {
-                  if (cityStatus === 'complete' && cityResult.center) {
-                      globalLng = cityResult.center[0];
-                      globalLat = cityResult.center[1];
-                      console.log("📍 已通过手机 IP 切换至当前城市大体坐标:", globalLng, globalLat);
-                      statusEl.innerText = "受限于权限或网络，已使用您的大体位置";
+                geolocation.getCityInfo(function (cityStatus, cityResult) {
+                  if (cityStatus === "complete" && cityResult.center) {
+                    globalLng = cityResult.center[0];
+                    globalLat = cityResult.center[1];
+                    console.log(
+                      "📍 已通过手机 IP 切换至当前城市大体坐标:",
+                      globalLng,
+                      globalLat,
+                    );
+                    statusEl.innerText = "受限于权限或网络，已使用您的大体位置";
                   } else {
-                      statusEl.innerText = "未获取到精确位置，正在盲跑";
+                    statusEl.innerText = "未获取到精确位置，正在盲跑";
                   }
-                  
+
                   setTimeout(() => {
-                      statusEl.innerText = "小智已准备好，请随时提问";
+                    statusEl.innerText = "小智已准备好，请随时提问";
                   }, 4500);
 
                   var weather = new AMap.Weather();
@@ -2447,45 +2535,59 @@
         // 1. 格式化日期 MM-DD 用于匹配节日
         const dateStr = `${month.toString().padStart(2, "0")}-${date.toString().padStart(2, "0")}`;
 
-       // 2. 🌟 时间段问候 (6大场景统一风格、自然色彩过渡的 SVG 图标引擎)
+        // 2. 🌟 时间段问候 (6大场景统一风格、自然色彩过渡的 SVG 图标引擎)
         let timeGreeting = "嗨";
         let timeIcon = "";
 
         // 统一尺寸与绝对居中对齐样式 (18x18完美契合文字)
-        const iconStyle = 'width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; flex-shrink: 0;"';
+        const iconStyle =
+          'width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; flex-shrink: 0;"';
 
         // 🌅 早上 (5:00-8:59) - 晨光破晓 (暖橘色 -> 桃粉色)
         const svgMorning = `<svg ${iconStyle} stroke="url(#m-grad)"><defs><linearGradient id="m-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FF7E5F"/><stop offset="100%" stop-color="#FEB47B"/></linearGradient></defs><path d="M17 18a5 5 0 0 0-10 0"></path><line x1="12" y1="2" x2="12" y2="9"></line><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"></line><line x1="1" y1="18" x2="3" y2="18"></line><line x1="21" y1="18" x2="23" y2="18"></line><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"></line><line x1="23" y1="22" x2="1" y2="22"></line><polyline points="8 6 12 2 16 6"></polyline></svg>`;
-        
+
         // 🌤️ 上午 (9:00-11:59) - 朝气蓬勃 (明黄色 -> 亮橙色)
         const svgForenoon = `<svg ${iconStyle} stroke="url(#fn-grad)"><defs><linearGradient id="fn-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FFD200"/><stop offset="100%" stop-color="#F7971E"/></linearGradient></defs><path d="M12 2v2"></path><path d="M5 5l1.5 1.5"></path><path d="M2 12h2"></path><path d="M19 5l-1.5 1.5"></path><path d="M22 12h-2"></path><path d="M17.5 19H9a4 4 0 1 1 0-8h.5a5 5 0 1 1 9.5 3 2.5 2.5 0 1 1-1.5 5z"></path></svg>`;
-        
+
         // ☀️ 中午 (12:00-13:59) - 烈日当空 (亮橙红 -> 金黄色)
         const svgNoon = `<svg ${iconStyle} stroke="url(#noon-grad)"><defs><linearGradient id="noon-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FF512F"/><stop offset="100%" stop-color="#F09819"/></linearGradient></defs><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`;
-        
+
         // ☕ 下午 (14:00-17:59) - 落日余晖/下午茶 (红橘色 -> 浅蜜桃)
         const svgAfternoon = `<svg ${iconStyle} stroke="url(#af-grad)"><defs><linearGradient id="af-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FF0844"/><stop offset="100%" stop-color="#FFB199"/></linearGradient></defs><path d="M18 8h1a4 4 0 0 1 0 8h-1"></path><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path><line x1="6" y1="1" x2="6" y2="4"></line><line x1="10" y1="1" x2="10" y2="4"></line><line x1="14" y1="1" x2="14" y2="4"></line></svg>`;
-        
+
         // 🌙 晚上 (18:00-22:59) - 华灯初上 (蓝紫色 -> 紫红色)
         const svgEvening = `<svg ${iconStyle} stroke="url(#e-grad)"><defs><linearGradient id="e-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#667EEA"/><stop offset="100%" stop-color="#764BA2"/></linearGradient></defs><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>`;
-        
+
         // 🌌 夜深了 (23:00-4:59) - 静谧深夜 (冷青色 -> 深靛蓝)
         const svgLateNight = `<svg ${iconStyle} stroke="url(#ln-grad)"><defs><linearGradient id="ln-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#30CFD0"/><stop offset="100%" stop-color="#330867"/></linearGradient></defs><path d="M13 22H7a5 5 0 1 1 4.9-6H13a3 3 0 0 1 0 6z"></path><path d="M10.04 8.78A7 7 0 0 1 21 12.79 6 6 0 0 0 10.04 8.78z"></path></svg>`;
 
         // 智能匹配时段图标
-        if (hour >= 5 && hour < 9) { timeGreeting = "早上好"; timeIcon = svgMorning; }
-        else if (hour >= 9 && hour < 12) { timeGreeting = "上午好"; timeIcon = svgForenoon; }
-        else if (hour >= 12 && hour < 14) { timeGreeting = "中午好"; timeIcon = svgNoon; }
-        else if (hour >= 14 && hour < 18) { timeGreeting = "下午好"; timeIcon = svgAfternoon; }
-        else if (hour >= 18 && hour < 23) { timeGreeting = "晚上好"; timeIcon = svgEvening; }
-        else { timeGreeting = "夜深了"; timeIcon = svgLateNight; }
+        if (hour >= 5 && hour < 9) {
+          timeGreeting = "早上好";
+          timeIcon = svgMorning;
+        } else if (hour >= 9 && hour < 12) {
+          timeGreeting = "上午好";
+          timeIcon = svgForenoon;
+        } else if (hour >= 12 && hour < 14) {
+          timeGreeting = "中午好";
+          timeIcon = svgNoon;
+        } else if (hour >= 14 && hour < 18) {
+          timeGreeting = "下午好";
+          timeIcon = svgAfternoon;
+        } else if (hour >= 18 && hour < 23) {
+          timeGreeting = "晚上好";
+          timeIcon = svgEvening;
+        } else {
+          timeGreeting = "夜深了";
+          timeIcon = svgLateNight;
+        }
 
         if (titleEl) {
-            titleEl.style.display = 'flex';
-            titleEl.style.alignItems = 'center';
-            // 💡 严丝合缝的对齐优化：设置行高，并将文字包裹在 span 中确保绝对居中
-            titleEl.style.lineHeight = '1'; 
-            titleEl.innerHTML = `${timeIcon} <span>${timeGreeting}，我是<span class="highlight-name" style="margin-left:4px;">小智</span></span>`;
+          titleEl.style.display = "flex";
+          titleEl.style.alignItems = "center";
+          // 💡 严丝合缝的对齐优化：设置行高，并将文字包裹在 span 中确保绝对居中
+          titleEl.style.lineHeight = "1";
+          titleEl.innerHTML = `${timeIcon} <span>${timeGreeting}，我是<span class="highlight-name" style="margin-left:4px;">小智</span></span>`;
         }
         // 3. 特殊节日与节气字典 (公历近似值)
         const specialDays = {
@@ -2510,32 +2612,34 @@
           "12-31": "今天是今年的最后一天啦，准备好跨年了吗？🎉",
         };
 
-       let personalizedTip = "";
+        let personalizedTip = "";
         let isLateNight = hour >= 23 || hour < 5;
 
         // 💡 优先级 1：深夜温馨提示 (如果到了深夜，强制开启贴心关怀)
         if (isLateNight) {
-            if (specialDays[dateStr]) {
-                // 如果恰好遇上跨年/圣诞节等节日的深夜，巧妙地融合在一起！
-                personalizedTip = specialDays[dateStr] + " 夜深了，注意身体早点休息哦。💤";
-            } else {
-                // 平凡的深夜
-                personalizedTip = "夜深了，学习再忙也要注意身体，记得早点休息哦。💤";
-            }
+          if (specialDays[dateStr]) {
+            // 如果恰好遇上跨年/圣诞节等节日的深夜，巧妙地融合在一起！
+            personalizedTip =
+              specialDays[dateStr] + " 夜深了，注意身体早点休息哦。💤";
+          } else {
+            // 平凡的深夜
+            personalizedTip =
+              "夜深了，学习再忙也要注意身体，记得早点休息哦。💤";
+          }
         }
         // 💡 优先级 2：节日和节气 (白天正常显示)
         else if (specialDays[dateStr]) {
-            personalizedTip = specialDays[dateStr];
+          personalizedTip = specialDays[dateStr];
         }
         // 💡 优先级 3：星期状态 (日常状态兜底)
         else {
-            if (day === 1 && hour < 12) {
-                personalizedTip = "新的一周开始啦，元气满满地冲鸭！💪";
-            } else if (day === 5 && hour > 12) {
-                personalizedTip = "马上就周末啦，坚持就是胜利！🍻";
-            } else if (day === 0 || day === 6) {
-                personalizedTip = "周末好时光，记得劳逸结合好好休息哦。☕";
-            }
+          if (day === 1 && hour < 12) {
+            personalizedTip = "新的一周开始啦，元气满满地冲鸭！💪";
+          } else if (day === 5 && hour > 12) {
+            personalizedTip = "马上就周末啦，坚持就是胜利！🍻";
+          } else if (day === 0 || day === 6) {
+            personalizedTip = "周末好时光，记得劳逸结合好好休息哦。☕";
+          }
         }
 
         // 💡 优先级 3：天气与温度提醒 (只在有对应情况时叠加)

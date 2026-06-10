@@ -1273,82 +1273,44 @@
       // 页面结构一旦解析完毕，立刻启动预下载
       document.addEventListener("DOMContentLoaded", preloadAssets);
       const QUESTIONS_POOL = [
-        "学校的全称是什么？",
-        "学校有几个校区？分别在哪里？",
-        "学校的官方网站是什么？",
-        "学校的招生咨询电话是多少？",
-        "学校有哪些主要的行政职能部门？",
-        "学生处负责哪些事务？怎么联系？",
-        "人工智能学院的办公室在哪里？",
-        "学校的后勤服务报修电话是多少？",
-        "人工智能学院开设了哪些专业？",
-        "数字媒体技术专业主要学什么课程？",
-        "计算机网络技术专业的就业方向有哪些？",
-        "数字媒体应用技术专业的学制是几年？",
-        "数字媒体技术专业可以专升本吗？",
-        "计算机相关专业需要带电脑吗？",
-        "数字媒体技术专业的核心课程有哪些？",
-        "学校有哪些特色专业？",
-        "黄楠老师教哪些课程？",
-        "黄楠老师获得过什么教学奖项？",
-        "熊杨老师的AIGC绘图课难吗？",
-        "熊杨老师获得过巴渝工匠杯一等奖吗？",
-        "曹明雨老师的三维影视动画课怎么样？",
-        "曹明雨老师会指导学生参加设计类竞赛吗？",
-        "曹明雨老师主持过什么省级项目？",
-        "冉浪老师的研究方向是什么？",
-        "冉浪老师发表过SCI论文吗？",
-        "刘其文老师有企业工作经验吗？",
-        "刘其文老师的课有真实商业项目吗？",
-        "刘其文老师会指导学生参加技能大赛吗？",
-        "孙杨高老师教哪些课程？",
-        "孙杨高老师的教学风格怎么样？",
-        "孙杨高老师获得过什么教学或行业奖项？",
-        "孙杨高老师会指导学生参加什么类型的竞赛？",
-        "孙杨高老师的研究方向是什么？",
-        "孙杨高老师有企业实战经验吗？",
-        "孙杨高老师的办公地点在哪里？",
-        "数字媒体技术专业教研团队有哪些老师？",
-        "教AI辅助设计的老师有哪些？",
-        "教三维建模和动画的老师有哪些？",
-        "教影视后期与特效的老师有哪些？",
-        "人工智能学院哪位老师擅长指导学生参加技能大赛？",
+        "人工智能学院的毕业活动整体流程是怎样的？",
+        "本次毕业季的专属打卡点在哪里？",
+        "毕业季有哪些和AI专业相关的纪念活动？",
+        "参加毕业活动有什么需要注意的事项吗？",
       ];
-      // ==========================================
-      // 📳 4. 交互音效与震动反馈引擎 (移动端破冰兼容版)
+// ==========================================
+      // 📳 4. 交互音效与震动反馈引擎 (移动端破冰兼容及深度调优版)
       // ==========================================
       // 🚨 注意：请务必将下面的 .mp3 替换为你真实可访问的音效链接！
-      const pressSound = new Audio(
-        "https://ai-avatar-wwl.oss-cn-beijing.aliyuncs.com/dianji.mp3",
-      );
-      const releaseSound = new Audio(
-        "https://ai-avatar-wwl.oss-cn-beijing.aliyuncs.com/fasong.mp3",
-      );
-      const cancelSound = new Audio(
-        "https://ai-avatar-wwl.oss-cn-beijing.aliyuncs.com/quxiao1.mp3",
-      );
+      const pressSound = new Audio("https://ai-avatar-wwl.oss-cn-beijing.aliyuncs.com/dianji.mp3");
+      const releaseSound = new Audio("https://ai-avatar-wwl.oss-cn-beijing.aliyuncs.com/fasong.mp3");
+      const cancelSound = new Audio("https://ai-avatar-wwl.oss-cn-beijing.aliyuncs.com/quxiao1.mp3");
 
       pressSound.preload = "auto";
       releaseSound.preload = "auto";
       cancelSound.preload = "auto";
 
-      // 🚀 核心修复：移动端音频“破冰”解锁机制
-      // 在用户第一次触摸屏幕时，立刻无声地播放并暂停所有音效，获取浏览器的播放通行证
-      // 🛠️ 新增：安全的音频播放包裹函数 (防止连续点击报错)
+      // 🌟 修正 1：将取消发送的音效声音强行削减 50%，使其柔和不刺耳
+      cancelSound.volume = 0.5;
+
+      // 🌟 修正 2：安全的音频播放包裹函数。音频无法触发时直接静默取消，只依赖交互事件自带的震动，杜绝延迟
       function safePlay(audioObj) {
         if (!audioObj) return;
         try {
           audioObj.currentTime = 0;
           const playPromise = audioObj.play();
           if (playPromise !== undefined) {
-            playPromise.catch((e) => console.warn("音频播放可能被拦截:", e));
+            playPromise.catch((e) => {
+              // 默默拦截报错。如果手机浏览器限制了音频，程序不会卡顿
+              // 用户依然能通过绑定的 triggerVibration 获得干净利落的纯震动反馈
+              console.warn("音频被拦截或加载延迟，已降级为纯震动反馈");
+            });
           }
         } catch (e) {
-          console.warn("音频重置失败:", e);
+          // 静默处理异常
         }
       }
 
-      // 🚀 核心修复：移动端音频“破冰”解锁机制 (音量置零法)
       // 🚀 核心修复：移动端音频“破冰”解锁机制 (音量置零法)
       const unlockAudio = function (e) {
         // 🌟 关键修复：解决第一次点击无声音的资源冲突
@@ -1373,10 +1335,11 @@
               p.then(() => {
                 audio.pause();
                 audio.currentTime = 0;
-                audio.volume = 1; // 获取到通行证后，恢复音量
+                // 🌟 修正 3：解锁成功后，精准恢复音量（取消音效恢复到0.5，其他恢复到1）
+                audio.volume = (audio === cancelSound) ? 0.5 : 1.0;
                 audio.unlocked = true; // 标记为已解锁
               }).catch(() => {
-                console.warn("音频破冰被拦截");
+                // 破冰失败静默处理
               });
             }
           }
@@ -2460,7 +2423,7 @@
                     name: "图书馆",
                     lng: 108.450033,
                     lat: 30.756368,
-                    radius: 200,
+                    radius: 100,
                     icon: "📖",
                     msg: "检测到您在图书馆附近，愿你在知识的海洋里遨游，保持安静哦。",
                   },
@@ -2468,7 +2431,7 @@
                     name: "实训机房",
                     lng: 108.451867,
                     lat: 30.757271,
-                    radius: 200,
+                    radius: 100,
                     icon: "💻",
                     msg: "您好像在实训机房附近，请注意用电安全，规范使用设备哦！",
                   },
